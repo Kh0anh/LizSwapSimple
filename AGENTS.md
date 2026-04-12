@@ -12,6 +12,7 @@ Bạn phải tìm hiểu kỹ bối cảnh bằng cách đọc các file lưu tr
 3. `docs/architecture/project-structure.md` - Sơ đồ chi tiết thiết kế thư mục. Mọi component code hay file config cấu hình PHẢI nằm đúng vị trí trong cây thư mục được chỉ định ở đây.
 4. `docs/architecture/c4-context.md`, `c4-container.md`, `c4-component.md` - Thiết kế giới hạn Module và cách chúng gọi nhau.
 5. `docs/architecture/frontend-design.md` - Quy chuẩn thiết kế UI/UX giao diện (Light Mode mặc định, màu Xanh Nước Biển Sáng, sử dụng duy nhất font JetBrains Mono). Agent phải đọc file này để đồng nhất màu sắc và custom component khi code Frontend.
+6. `docs/project-management/master-plan.md` - Bảng điều khiển dự án (Master Plan). Phải đọc file này để xem lộ trình các Phase. Các chi tiết task mã nguồn nằm trong thư mục `docs/project-management/tasks/*.md`, Agent cần dò map số WBS ID bên trong Master Plan để mở/đọc task tương ứng trước khi tiến hành code.
 
 ---
 
