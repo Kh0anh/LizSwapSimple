@@ -1,0 +1,25 @@
+{
+  "name": "lizswapsimple",
+  "version": "1.0.0",
+  "description": "LizSwapSimple — Sàn giao dịch phi tập trung (DEX) nguyên mẫu dựa trên AMM Uniswap V2 cho BSC",
+  "private": true,
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "node": "npx hardhat node",
+    "deploy:local": "npx hardhat ignition deploy ./ignition/modules/deploy.ts --network localhost",
+    "deploy:testnet": "npx hardhat ignition deploy ./ignition/modules/deploy.ts --network bscTestnet",
+    "dev": "next dev",
+    "build": "next build"
+  },
+  "keywords": [
+    "dex",
+    "amm",
+    "uniswap-v2",
+    "bsc",
+    "solidity",
+    "nextjs"
+  ],
+  "author": "Khanh",
+  "license": "MIT"
+}
