@@ -1,0 +1,32 @@
+# ═══════════════════════════════════════════
+# [NFR-02] [NFR-03] LizSwapSimple — .gitignore
+# ═══════════════════════════════════════════
+
+# Dependencies
+node_modules/
+
+# ─── Hardhat (Blockchain) ───
+artifacts/
+cache/
+typechain-types/
+
+# ─── Next.js (Frontend) ───
+.next/
+out/
+
+# ─── Environment Variables ───
+.env
+.env.local
+.env.*.local
+
+# ─── IDE ───
+.vscode/
+.idea/
+
+# ─── OS ───
+.DS_Store
+Thumbs.db
+
+# ─── Misc ───
+*.log
+npm-debug.log*
