@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "LizSwapSimple — Sàn giao dịch phi tập trung (DEX) nguyên mẫu dựa trên AMM Uniswap V2 cho BSC",
   "private": true,
+  "type": "module",
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
@@ -23,7 +24,7 @@
   "author": "Khanh",
   "license": "MIT",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^7.0.0",
+    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.3",
     "@tailwindcss/postcss": "^4.2.2",
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
