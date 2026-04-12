@@ -1,6 +1,6 @@
 # Task 1.6: Khởi tạo shadcn/ui và Tailwind Design Token
 
-- **Người đảm nhận:** **Hộp**
+- **Người đảm nhận:** **Khanh**
 - **Mã Yêu cầu:** `[NFR-02]`, frontend-design.md §1, §5
 - **Task phụ thuộc:** Task 1.4
 - **Đường dẫn File:** `tailwind.config.ts`, `src/app/globals.css`, `components.json`

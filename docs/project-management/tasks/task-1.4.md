@@ -1,6 +1,6 @@
 # Task 1.4: Khởi tạo Next.js App Structure
 
-- **Người đảm nhận:** **Hộp**
+- **Người đảm nhận:** **Khanh**
 - **Mã Yêu cầu:** `[NFR-02]` (Frontend Tĩnh), project-structure.md §2
 - **Task phụ thuộc:** Task 1.1
 - **Đường dẫn File:** `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/pool/page.tsx`, `next.config.mjs`
