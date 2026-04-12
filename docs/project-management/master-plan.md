@@ -40,7 +40,7 @@ gantt
 
 | Phase | Tên | Mô tả | Người chính |
 |:---:|---|---|---|
-| **1** | Foundation & Environment Setup | Khởi tạo monorepo, Hardhat, Next.js, Docker, `.env`, cấu hình chung | Khanh (chủ trì), Hộp |
+| **1** | Foundation & Environment Setup | Khởi tạo monorepo, Hardhat, Next.js, Docker, `.env`, cấu hình chung | **Khanh** (chuyên trách) |
 | **2** | Smart Contract Development | Viết, test toàn bộ hệ sinh thái Smart Contract (Core + Periphery) | **Khanh** (chuyên trách) |
 | **3** | Frontend Foundation & Web3 Integration | Design System, Layout, Navbar, Hook Web3, Contract Services | Hộp, Huy |
 | **4** | Feature Pages Implementation | Trang Swap `[FR-01]`, Trang Pool `[FR-02, FR-03]`, Modal/Toast TX | Hộp, Huy |
@@ -62,9 +62,9 @@ gantt
 | **1.1** | Khởi tạo Monorepo và Package Configuration | Setup `package.json` với script dev/build, cài dependencies Blockchain/Frontend, setup `tsconfig.json`. | `[NFR-02]`, `[NFR-03]` | **Khanh** | Không có | [Chi tiết](tasks/task-1.1.md) |
 | **1.2** | Cấu hình Hardhat Environment | Cấu hình Solidity `0.8.20+`, optimizer, và định nghĩa networks (localhost, testnet) từ biến môi trường. | `[NFR-03]` (Configurable), Tech Stack §1 | **Khanh** | Task 1.1 | [Chi tiết](tasks/task-1.2.md) |
 | **1.3** | Tạo Template Biến Môi Trường | Tạo `.env.example` chứa cấu hình RPC, Private Key, Factory/Router. Cập nhật `.gitignore`. | `[NFR-03]` (Configurable) | **Khanh** | Task 1.2 | [Chi tiết](tasks/task-1.3.md) |
-| **1.4** | Khởi tạo Next.js App Structure | Tạo Next.js App Router (static export), định hình cấu trúc cây thư mục UI/API theo srs, config Tailwind baseline. | `[NFR-02]` (Frontend Tĩnh), project-structure.md §2 | **Hộp** | Task 1.1 | [Chi tiết](tasks/task-1.4.md) |
+| **1.4** | Khởi tạo Next.js App Structure | Tạo Next.js App Router (static export), định hình cấu trúc cây thư mục UI/API theo srs, config Tailwind baseline. | `[NFR-02]` (Frontend Tĩnh), project-structure.md §2 | **Khanh** | Task 1.1 | [Chi tiết](tasks/task-1.4.md) |
 | **1.5** | Cấu hình Docker & Docker Compose | Viết `Dockerfile` auto multi-stage build và `docker-compose.yml` để dễ dàng run frontend ở port 3000. | `[NFR-02]` (Deploy dễ), project-structure.md §3 | **Khanh** | Task 1.4 | [Chi tiết](tasks/task-1.5.md) |
-| **1.6** | Khởi tạo shadcn/ui và Tailwind Design Token | Tích hợp thư viện UI shadcn, áp dụng font JetBrains Mono và design color tokens vào CSS toàn cục. | `[NFR-02]`, frontend-design.md §1, §5 | **Hộp** | Task 1.4 | [Chi tiết](tasks/task-1.6.md) |
+| **1.6** | Khởi tạo shadcn/ui và Tailwind Design Token | Tích hợp thư viện UI shadcn, áp dụng font JetBrains Mono và design color tokens vào CSS toàn cục. | `[NFR-02]`, frontend-design.md §1, §5 | **Khanh** | Task 1.4 | [Chi tiết](tasks/task-1.6.md) |
 
 ## ═══════════════════════════════════════════
 ## PHASE 2 — Smart Contract Development
@@ -141,20 +141,22 @@ gantt
 | 1 | 1.1 | Khởi tạo Monorepo & Package Config | P1 | — |
 | 2 | 1.2 | Cấu hình Hardhat Environment | P1 | 1.1 |
 | 3 | 1.3 | Tạo Template Biến Môi Trường (.env) | P1 | 1.2 |
-| 4 | 1.5 | Cấu hình Docker & Docker Compose | P1 | 1.4 (Hộp) |
-| 5 | 2.1 | Contract Interfaces (IFactory, IPair, IRouter, IERC20) | P2 | 1.2 |
-| 6 | 2.2 | LizSwapERC20.sol (LP Token Base) | P2 | 2.1 |
-| 7 | 2.3 | LizSwapFactory.sol | P2 | 2.2 |
-| 8 | 2.4 | LizSwapPair.sol (Lõi AMM x*y=k) | P2 | 2.2, 2.3 |
-| 9 | 2.5 | Math Libraries (LizSwapLibrary, Math) | P2 | 2.3, 2.4 |
-| 10 | 2.6 | LizSwapRouter.sol (Periphery Entry Point) | P2 | 2.4, 2.5 |
-| 11 | 2.7 | MockERC20 Token | P2 | 1.2 |
-| 12 | 2.8 | Deployment Script (Hardhat Ignition) + Export ABI | P2 | 2.6, 2.7 |
-| 13 | 2.9 | Smart Contract Unit Tests (Factory, Pair, Router) | P2 | 2.6, 2.7 |
-| 14 | 5.1 | E2E Integration Test — Local (chủ trì) | P5 | All P2, P3, P4 |
-| 15 | 5.2 | Docker Production Build & Verify | P5 | 5.1 |
-| 16 | 5.3 | Deploy Smart Contract lên BSC Testnet | P5 | 2.9 |
-| 17 | 5.5 | Final Documentation & README | P5 | 5.4 |
+| 4 | 1.4 | Khởi tạo Next.js App Structure | P1 | 1.1 |
+| 5 | 1.5 | Cấu hình Docker & Docker Compose | P1 | 1.4 |
+| 6 | 1.6 | Khởi tạo shadcn/ui & Tailwind Design Token | P1 | 1.4 |
+| 7 | 2.1 | Contract Interfaces (IFactory, IPair, IRouter, IERC20) | P2 | 1.2 |
+| 8 | 2.2 | LizSwapERC20.sol (LP Token Base) | P2 | 2.1 |
+| 9 | 2.3 | LizSwapFactory.sol | P2 | 2.2 |
+| 10 | 2.4 | LizSwapPair.sol (Lõi AMM x*y=k) | P2 | 2.2, 2.3 |
+| 11 | 2.5 | Math Libraries (LizSwapLibrary, Math) | P2 | 2.3, 2.4 |
+| 12 | 2.6 | LizSwapRouter.sol (Periphery Entry Point) | P2 | 2.4, 2.5 |
+| 13 | 2.7 | MockERC20 Token | P2 | 1.2 |
+| 14 | 2.8 | Deployment Script (Hardhat Ignition) + Export ABI | P2 | 2.6, 2.7 |
+| 15 | 2.9 | Smart Contract Unit Tests (Factory, Pair, Router) | P2 | 2.6, 2.7 |
+| 16 | 5.1 | E2E Integration Test — Local (chủ trì) | P5 | All P2, P3, P4 |
+| 17 | 5.2 | Docker Production Build & Verify | P5 | 5.1 |
+| 18 | 5.3 | Deploy Smart Contract lên BSC Testnet | P5 | 2.9 |
+| 19 | 5.5 | Final Documentation & README | P5 | 5.4 |
 
 ---
 
@@ -162,17 +164,15 @@ gantt
 
 | # | WBS ID | Task | Phase | Task phụ thuộc |
 |:---:|:---:|---|:---:|---|
-| 1 | 1.4 | Khởi tạo Next.js App Structure | P1 | 1.1 (Khanh) |
-| 2 | 1.6 | Khởi tạo shadcn/ui & Tailwind Design Token | P1 | 1.4 |
-| 3 | 3.1 | Root Layout & Google Font Integration | P3 | 1.6 |
-| 4 | 3.2 | Navbar Component | P3 | 3.1, 3.4 (Huy) |
-| 5 | 3.6 | Cài đặt shadcn/ui Components cơ bản | P3 | 1.6 |
-| 6 | 4.1 | TokenSelector Component | P4 | 3.6 |
-| 7 | 4.2 | **Swap Page (Trang Home chính)** | P4 | 3.2, 3.5 (Huy), 3.6, 4.1 |
-| 8 | 4.5 | Transaction Toast/Notification System | P4 | 3.6, 3.1 |
-| 9 | 4.6 | Confirmation Dialogs (Swap + Liquidity) | P4 | 3.6, 4.2, 4.3 (Huy) |
-| 10 | 5.1 | E2E Integration Test — Local (hỗ trợ) | P5 | All |
-| 11 | 5.4 | E2E Test trên BSC Testnet | P5 | 5.3 (Khanh) |
+| 1 | 3.1 | Root Layout & Google Font Integration | P3 | 1.6 (Khanh) |
+| 2 | 3.2 | Navbar Component | P3 | 3.1, 3.4 (Huy) |
+| 3 | 3.6 | Cài đặt shadcn/ui Components cơ bản | P3 | 1.6 (Khanh) |
+| 4 | 4.1 | TokenSelector Component | P4 | 3.6 |
+| 5 | 4.2 | **Swap Page (Trang Home chính)** | P4 | 3.2, 3.5 (Huy), 3.6, 4.1 |
+| 6 | 4.5 | Transaction Toast/Notification System | P4 | 3.6, 3.1 |
+| 7 | 4.6 | Confirmation Dialogs (Swap + Liquidity) | P4 | 3.6, 4.2, 4.3 (Huy) |
+| 8 | 5.1 | E2E Integration Test — Local (hỗ trợ) | P5 | All |
+| 9 | 5.4 | E2E Test trên BSC Testnet | P5 | 5.3 (Khanh) |
 
 ---
 
@@ -198,9 +198,9 @@ flowchart TD
         T1_1["1.1 Monorepo Init<br/>(Khanh)"]
         T1_2["1.2 Hardhat Config<br/>(Khanh)"]
         T1_3["1.3 .env Template<br/>(Khanh)"]
-        T1_4["1.4 Next.js App<br/>(Hộp)"]
+        T1_4["1.4 Next.js App<br/>(Khanh)"]
         T1_5["1.5 Docker<br/>(Khanh)"]
-        T1_6["1.6 shadcn + Tailwind<br/>(Hộp)"]
+        T1_6["1.6 shadcn + Tailwind<br/>(Khanh)"]
     end
 
     subgraph "Phase 2 — Smart Contracts"
