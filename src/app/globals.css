@@ -1,2 +1,295 @@
-/* [NFR-02] Placeholder globals.css — Sẽ được thiết lập đầy đủ tại Task 1.6 */
+/* ============================================================
+ * [NFR-02] LizSwapSimple — Global Stylesheet
+ * Task 1.6: Khởi tạo shadcn/ui và Tailwind Design Token
+ * Tuân thủ: frontend-design.md §2 (Color Palette), §3 (Typography), §5 (Component Token)
+ * ============================================================ */
+
+/* Import font JetBrains Mono từ Google Fonts — [frontend-design.md §3] */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+/* Tailwind CSS v4 core + shadcn dependencies */
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Dark mode variant (shadcn/ui convention) */
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+ * @theme — Tailwind v4 Design Token Mapping
+ * [frontend-design.md §5] — CSS Variables → Tailwind color tokens
+ * [frontend-design.md §3] — Font JetBrains Mono làm font mặc định
+ * ============================================================ */
+@theme inline {
+    /* === Font System === */
+    /* [frontend-design.md §3] JetBrains Mono — font duy nhất cho toàn bộ hệ thống */
+    /* Sử dụng CSS variable từ next/font/google để tối ưu font loading */
+    --font-sans: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
+    --font-mono: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
+    --font-heading: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
+
+    /* === Color Token Mapping (CSS Variables → Tailwind classes) === */
+    /* [frontend-design.md §5] Ánh xạ CSS variables để dùng bg-background, text-foreground, ... */
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    /* === Chart Colors (cho biểu đồ Pool Analytics) === */
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+
+    /* === Sidebar Colors === */
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+
+    /* === Border Radius Scale [frontend-design.md §4] === */
+    /* frontend-design.md §4: Card rounded-xl, Button rounded-lg đến rounded-full */
+    --radius-sm: calc(var(--radius) * 0.6);   /* ~0.45rem */
+    --radius-md: calc(var(--radius) * 0.8);   /* ~0.6rem  */
+    --radius-lg: var(--radius);               /* 0.75rem  */
+    --radius-xl: calc(var(--radius) * 1.4);   /* ~1.05rem */
+    --radius-2xl: calc(var(--radius) * 1.8);  /* ~1.35rem */
+    --radius-3xl: calc(var(--radius) * 2.2);  /* ~1.65rem */
+    --radius-4xl: calc(var(--radius) * 2.6);  /* ~1.95rem */
+}
+
+/* ============================================================
+ * :root — Light Mode Design Tokens (CHỈNH THEO LIZSWAP DESIGN)
+ * [frontend-design.md §2] Light Mode ONLY — Xanh Nước Biển Sáng (Sky Blue)
+ * ============================================================ */
+:root {
+    /* === Backgrounds [frontend-design.md §2.1] === */
+    /* App background: slate-50 (#f8fafc) */
+    --background: oklch(0.984 0.003 247.858);
+    /* Text foreground: slate-900 (#0f172a) */
+    --foreground: oklch(0.208 0.042 265.755);
+
+    /* Card/Container: white với shadow nhẹ [frontend-design.md §2.1] */
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.208 0.042 265.755);
+
+    /* Popover */
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.208 0.042 265.755);
+
+    /* === Primary Colors [frontend-design.md §2.2] === */
+    /* Sky-500 (#0ea5e9) — màu nhấn chủ đạo cho Swap, Add Liquidity, Connect Wallet */
+    --primary: oklch(0.685 0.169 237.323);
+    /* White text trên nền primary */
+    --primary-foreground: oklch(1 0 0);
+
+    /* === Secondary === */
+    /* slate-100 nhạt */
+    --secondary: oklch(0.961 0.004 247.858);
+    --secondary-foreground: oklch(0.208 0.042 265.755);
+
+    /* === Muted [frontend-design.md §2.3] === */
+    /* slate-100 (#f1f5f9) */
+    --muted: oklch(0.961 0.004 247.858);
+    /* slate-500 (#64748b) — text phụ, label, placeholder */
+    --muted-foreground: oklch(0.554 0.019 254.128);
+
+    /* === Accent (hover states) === */
+    --accent: oklch(0.961 0.004 247.858);
+    --accent-foreground: oklch(0.208 0.042 265.755);
+
+    /* === Semantic Colors [frontend-design.md §2.4] === */
+    /* Destructive: red-500 (#ef4444) — lỗi Vượt Slippage, lỗi hợp đồng */
+    --destructive: oklch(0.637 0.237 25.331);
+
+    /* === Border & Input [frontend-design.md §2.1] === */
+    /* slate-200 (#e2e8f0) — viền mảnh cho Card */
+    --border: oklch(0.929 0.013 255.508);
+    --input: oklch(0.929 0.013 255.508);
+
+    /* === Ring (focus outline) === */
+    /* sky-500 focus ring */
+    --ring: oklch(0.685 0.169 237.323);
+
+    /* === Border Radius [frontend-design.md §4] === */
+    /* Base radius: 0.75rem (cho rounded-lg) */
+    --radius: 0.75rem;
+
+    /* === Chart Colors (cho Pool/Analytics) === */
+    --chart-1: oklch(0.685 0.169 237.323);  /* sky-500 */
+    --chart-2: oklch(0.502 0.193 264.376);  /* blue-600 */
+    --chart-3: oklch(0.527 0.154 150.069);  /* emerald-600 */
+    --chart-4: oklch(0.693 0.155 162.376);  /* emerald-400 */
+    --chart-5: oklch(0.769 0.188 70.076);   /* amber-400 */
+
+    /* === Sidebar === */
+    --sidebar: oklch(0.984 0.003 247.858);
+    --sidebar-foreground: oklch(0.208 0.042 265.755);
+    --sidebar-primary: oklch(0.685 0.169 237.323);
+    --sidebar-primary-foreground: oklch(1 0 0);
+    --sidebar-accent: oklch(0.961 0.004 247.858);
+    --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
+    --sidebar-border: oklch(0.929 0.013 255.508);
+    --sidebar-ring: oklch(0.685 0.169 237.323);
+}
+
+/* ============================================================
+ * [frontend-design.md §2] Light Mode ONLY — Không có dark mode
+ * Block .dark được giữ lại nhưng dùng cùng palette sáng
+ * (LizSwapSimple chỉ hỗ trợ Light Mode theo thiết kế)
+ * ============================================================ */
+.dark {
+    /* Giữ nguyên palette sáng ngay cả khi class .dark được áp dụng
+     * Lý do: frontend-design.md §2 chốt cứng Light Mode ONLY */
+    --background: oklch(0.984 0.003 247.858);
+    --foreground: oklch(0.208 0.042 265.755);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.208 0.042 265.755);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.208 0.042 265.755);
+    --primary: oklch(0.685 0.169 237.323);
+    --primary-foreground: oklch(1 0 0);
+    --secondary: oklch(0.961 0.004 247.858);
+    --secondary-foreground: oklch(0.208 0.042 265.755);
+    --muted: oklch(0.961 0.004 247.858);
+    --muted-foreground: oklch(0.554 0.019 254.128);
+    --accent: oklch(0.961 0.004 247.858);
+    --accent-foreground: oklch(0.208 0.042 265.755);
+    --destructive: oklch(0.637 0.237 25.331);
+    --border: oklch(0.929 0.013 255.508);
+    --input: oklch(0.929 0.013 255.508);
+    --ring: oklch(0.685 0.169 237.323);
+    --chart-1: oklch(0.685 0.169 237.323);
+    --chart-2: oklch(0.502 0.193 264.376);
+    --chart-3: oklch(0.527 0.154 150.069);
+    --chart-4: oklch(0.693 0.155 162.376);
+    --chart-5: oklch(0.769 0.188 70.076);
+    --sidebar: oklch(0.984 0.003 247.858);
+    --sidebar-foreground: oklch(0.208 0.042 265.755);
+    --sidebar-primary: oklch(0.685 0.169 237.323);
+    --sidebar-primary-foreground: oklch(1 0 0);
+    --sidebar-accent: oklch(0.961 0.004 247.858);
+    --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
+    --sidebar-border: oklch(0.929 0.013 255.508);
+    --sidebar-ring: oklch(0.685 0.169 237.323);
+}
+
+/* ============================================================
+ * @layer base — Global Base Styles
+ * [frontend-design.md §3] JetBrains Mono toàn bộ ứng dụng
+ * [frontend-design.md §4] Micro-animations, transitions
+ * ============================================================ */
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+
+    body {
+        /* [frontend-design.md §2.1] Nền slate-50, text slate-900 */
+        @apply bg-background text-foreground;
+        /* [frontend-design.md §3] JetBrains Mono — font duy nhất hệ thống DEX */
+        font-family: 'JetBrains Mono', monospace;
+        /* Smooth font rendering cho số dư và addresses */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        /* font-feature-settings: tabular numbers — đảm bảo số có độ rộng đều [frontend-design.md §3] */
+        font-variant-numeric: tabular-nums;
+    }
+
+    html {
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* [frontend-design.md §4] Global transition cho mọi thay đổi màu sắc */
+    *,
+    *::before,
+    *::after {
+        transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 200ms;
+    }
+
+    /* Exception: không apply transition cho animation elements */
+    .no-transition,
+    .no-transition * {
+        transition: none !important;
+    }
+}
+
+/* ============================================================
+ * @layer utilities — Custom Utility Classes
+ * [frontend-design.md §2.2] Gradient utilities cho Primary Actions
+ * [frontend-design.md §4] Micro-animation utilities
+ * ============================================================ */
+@layer utilities {
+    /* [frontend-design.md §2.2] Primary Gradient: sky-400 → blue-500 */
+    /* Áp dụng cho: Swap Button, Add Liquidity Button, Connect Wallet Button */
+    .gradient-primary {
+        background: linear-gradient(135deg,
+            oklch(0.746 0.168 230.027),     /* sky-400 */
+            oklch(0.502 0.193 264.376)      /* blue-600 */
+        );
+    }
+
+    .gradient-primary-text {
+        background: linear-gradient(135deg,
+            oklch(0.746 0.168 230.027),
+            oklch(0.502 0.193 264.376)
+        );
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* [frontend-design.md §4] Primary Button Hover Effect */
+    /* hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-blue-500/25 */
+    .btn-primary-hover {
+        @apply transition-all duration-300 hover:scale-[1.02] active:scale-[0.98];
+        &:hover {
+            box-shadow: 0 10px 25px -5px oklch(0.502 0.193 264.376 / 0.25);
+        }
+    }
+
+    /* [frontend-design.md §2.4] Semantic color utilities */
+    /* Success: emerald-500 (#10b981) */
+    .text-success { color: oklch(0.696 0.17 162.48); }
+    .bg-success-subtle { background-color: oklch(0.696 0.17 162.48 / 0.1); }
+
+    /* Warning: amber-500 (#f59e0b) — Price Impact cao */
+    .text-warning { color: oklch(0.769 0.188 70.076); }
+    .bg-warning-subtle { background-color: oklch(0.769 0.188 70.076 / 0.1); }
+
+    /* Error: red-500 (#ef4444) */
+    .text-error { color: oklch(0.637 0.237 25.331); }
+    .bg-error-subtle { background-color: oklch(0.637 0.237 25.331 / 0.1); }
+
+    /* [frontend-design.md §4] Card hoverable surface */
+    .card-hoverable {
+        @apply transition-all duration-300 hover:shadow-md;
+    }
+
+    /* Monospace tabular numbers cho số dư và địa chỉ ví [frontend-design.md §3] */
+    .font-numbers {
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: "tnum";
+    }
+}
