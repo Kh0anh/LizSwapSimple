@@ -12,6 +12,8 @@
  * - frontend-design.md §2, §4: màu sắc và micro-animations sẽ thêm ở Task 3.2
  */
 
+import { WalletConnectButton } from "@/components/web3/WalletConnectButton";
+
 export function Navbar() {
   return (
     // [frontend-design.md §2.1] bg-white với border-bottom slate-200
@@ -27,6 +29,8 @@ export function Navbar() {
         {/* Navigation links + WalletConnectButton — Task 3.2 & 3.4 sẽ hoàn thiện */}
         <div className="flex items-center gap-4">
           {/* Placeholder navigation — sẽ được thay thế ở Task 3.2 */}
+          {/* [UC-01] Task 3.4: Wallet connect entry point */}
+          <WalletConnectButton />
         </div>
       </div>
     </nav>
