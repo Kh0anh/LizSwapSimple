@@ -156,6 +156,11 @@ export function Navbar() {
               isActive={pathname === link.href}
             />
           ))}
+        {/* Navigation links + WalletConnectButton — Task 3.2 & 3.4 sẽ hoàn thiện */}
+        <div className="flex items-center gap-4">
+          {/* Placeholder navigation — sẽ được thay thế ở Task 3.2 */}
+          {/* [UC-01] Task 3.4: Wallet connect entry point */}
+          <WalletConnectButton />
         </div>
 
         {/* ── Right: Mobile Nav + WalletConnectButton ───────────────────── */}
