@@ -9,9 +9,11 @@ pragma solidity ^0.8.20;
 // Kế thừa chuẩn ERC20 từ OpenZeppelin để đáp ứng bảo mật (techstack.md §1).
 // Khác biệt Uniswap V2 gốc: bản gốc tự code ERC20 thủ công; bản này dùng OZ.
 //
-// LizSwapPair sẽ kế thừa contract này và gọi _mint() / _burn() nội bộ khi:
-//   - Người dùng Add Liquidity → _mint() [FR-02.4]
-//   - Người dùng Remove Liquidity → _burn() [FR-03.2]
+// LizSwapPair sẽ kế thừa contract này và gọi _mintLP() / _burnLP() nội bộ khi:
+//   - Người dùng Add Liquidity → _mintLP() [FR-02.4]
+//   - Người dùng Remove Liquidity → _burnLP() [FR-03.2]
+//
+// Lưu ý OZ v5: _mint() và _burn() không còn virtual nữa, nên dùng wrapper.
 // ============================================================================
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -28,6 +30,12 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
  *      - Chuẩn bảo mật được kiểm toán (audited)
  *      - Tích hợp SafeMath mặc định từ Solidity ^0.8.20
  *      - Tuân thủ yêu cầu dự án tại techstack.md §1
+ *
+ *      Lưu ý kỹ thuật (OZ v5):
+ *      Từ OpenZeppelin v5, _mint() và _burn() không còn được đánh dấu
+ *      `virtual`, do đó không thể override. Thay vào đó, contract tạo
+ *      các internal wrapper `_mintLP` và `_burnLP` để LizSwapPair sử dụng,
+ *      giữ nguyên semantics nhưng thân thiện với version mới.
  */
 contract LizSwapERC20 is ERC20 {
     // -------------------------------------------------------------------------
@@ -42,43 +50,45 @@ contract LizSwapERC20 is ERC20 {
      *
      *      Không mint token nào tại thời điểm deploy.
      *      Toàn bộ việc phát hành token được uỷ quyền cho LizSwapPair
-     *      thông qua hàm _mint() nội bộ khi Add Liquidity [FR-02.4].
+     *      thông qua hàm _mintLP() nội bộ khi Add Liquidity [FR-02.4].
      */
     constructor() ERC20("LizSwap LP Token", "LIZ-LP") {}
 
     // -------------------------------------------------------------------------
-    // Internal functions — cho LizSwapPair sử dụng
+    // Internal wrapper functions — cho LizSwapPair sử dụng qua kế thừa
+    // Lý do dùng wrapper: OZ v5 không đánh dấu _mint/_burn là virtual,
+    // nên không thể override. Wrapper giữ nguyên semantics.
     // -------------------------------------------------------------------------
 
     /**
      * @notice Phát hành (mint) LP Token cho địa chỉ `to` khi thêm thanh khoản.
-     * @dev Override internal từ OpenZeppelin ERC20._mint().
-     *      Chỉ được gọi từ LizSwapPair khi người dùng Add Liquidity [UC-04].
-     *      Cập nhật totalSupply và balanceOf[to], phát sự kiện Transfer.
+     * @dev Wrapper gọi ERC20._mint() của OpenZeppelin.
+     *      LizSwapPair gọi hàm này khi người dùng Add Liquidity [UC-04].
+     *      Phát sự kiện Transfer(address(0), to, amount) theo chuẩn ERC20.
      *
      *      [FR-02.4] Người dùng nhận LP Token đại diện cho phần đóng góp Pool.
      *
-     * @param to     Địa chỉ nhận LP Token (thường là địa chỉ Liquidity Provider)
-     * @param amount Số lượng LP Token cần phát hành (tính theo wei, 18 decimals)
+     * @param to     Địa chỉ nhận LP Token (Liquidity Provider)
+     * @param amount Số lượng LP Token cần phát hành (18 decimals)
      */
-    function _mint(address to, uint256 amount) internal override {
+    function _mintLP(address to, uint256 amount) internal {
         // [FR-02.4] Mint LP Token đại diện cho phần đóng góp thanh khoản
-        super._mint(to, amount);
+        _mint(to, amount);
     }
 
     /**
      * @notice Thu hồi (burn) LP Token từ địa chỉ `from` khi rút thanh khoản.
-     * @dev Override internal từ OpenZeppelin ERC20._burn().
-     *      Chỉ được gọi từ LizSwapPair khi người dùng Remove Liquidity [UC-05].
-     *      Giảm totalSupply và balanceOf[from], phát sự kiện Transfer về address(0).
+     * @dev Wrapper gọi ERC20._burn() của OpenZeppelin.
+     *      LizSwapPair gọi hàm này khi người dùng Remove Liquidity [UC-05].
+     *      Phát sự kiện Transfer(from, address(0), amount) theo chuẩn ERC20.
      *
      *      [FR-03.2] Người dùng đổi LP Token lấy lại Token A và Token B theo tỷ lệ.
      *
-     * @param from   Địa chỉ bị thu hồi LP Token (thường là địa chỉ Liquidity Provider)
-     * @param amount Số lượng LP Token cần thu hồi (tính theo wei, 18 decimals)
+     * @param from   Địa chỉ bị thu hồi LP Token (Liquidity Provider)
+     * @param amount Số lượng LP Token cần thu hồi (18 decimals)
      */
-    function _burn(address from, uint256 amount) internal override {
+    function _burnLP(address from, uint256 amount) internal {
         // [FR-03.2] Burn LP Token khi người dùng rút thanh khoản
-        super._burn(from, amount);
+        _burn(from, amount);
     }
 }
