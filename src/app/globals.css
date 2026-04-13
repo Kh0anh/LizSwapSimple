@@ -1,6 +1,7 @@
 /* ============================================================
  * [NFR-02] LizSwapSimple — Global Stylesheet
  * Task 1.6: Khởi tạo shadcn/ui và Tailwind Design Token
+ * Task 3.1: Root Layout & Google Font Integration — đồng bộ --font-mono variable
  * Tuân thủ: frontend-design.md §2 (Color Palette), §3 (Typography), §5 (Component Token)
  * ============================================================ */
 
@@ -21,12 +22,13 @@
  * [frontend-design.md §3] — Font JetBrains Mono làm font mặc định
  * ============================================================ */
 @theme inline {
-    /* === Font System === */
-    /* [frontend-design.md §3] JetBrains Mono — font duy nhất cho toàn bộ hệ thống */
-    /* Sử dụng CSS variable từ next/font/google để tối ưu font loading */
-    --font-sans: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
-    --font-mono: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
-    --font-heading: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
+    /* === Font System [frontend-design.md §3] === */
+    /* [NFR-02] JetBrains Mono — font duy nhất cho toàn bộ hệ thống DEX */
+    /* Task 3.1: layout.tsx dùng variable '--font-mono' từ next/font/google */
+    /* Fallback hỗ trợ cả tên cũ '--font-jetbrains-mono' (Task 1.6) */
+    --font-sans: var(--font-mono), var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
+    --font-mono: var(--font-mono), var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
+    --font-heading: var(--font-mono), var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
 
     /* === Color Token Mapping (CSS Variables → Tailwind classes) === */
     /* [frontend-design.md §5] Ánh xạ CSS variables để dùng bg-background, text-foreground, ... */
