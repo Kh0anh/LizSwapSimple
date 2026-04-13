@@ -305,6 +305,7 @@ Agent PHẢI đọc TẤT CẢ tài liệu liên quan trước khi bắt đầu:
 - docs/architecture/c4-context.md, c4-container.md, c4-component.md
 - docs/architecture/frontend-design.md
 - docs/project-management/master-plan.md
+- docs/project-management/workflow-guide.md
 - docs/project-management/tasks/task-{WBS_ID}.md
 
 Kiểm tra task phụ thuộc đã hoàn thành chưa trước khi bắt đầu code.
