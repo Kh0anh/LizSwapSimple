@@ -4,14 +4,19 @@
  * [FR-01] Home Page — LizSwapSimple DEX (Swap Page Scaffold)
  *
  * Task 4.1 Demo: Tích hợp TokenSelector component để verify hoạt động.
+ * Task 4.5 Demo: Tích hợp showTxToast để verify Transaction Notification System.
  * Task 4.2 sẽ hoàn thiện toàn bộ Swap UI (quote, price impact, execute).
  *
  * Yêu cầu liên quan:
  * - [FR-01.2] Chọn token Input / Output — dùng TokenSelector
+ * - [FR-01.5] TX feedback — dùng showTxToast
  */
 
 import * as React from "react";
 import { ArrowDownUpIcon } from "lucide-react";
+
+// [Task 4.5] Import TX Toast utility [FR-01.5]
+import { showSwapToast, showTxToast } from "@/components/web3/TransactionToast";
 
 import { TokenSelector } from "@/components/web3/TokenSelector";
 import type { TokenInfo } from "@/types/token";
@@ -118,11 +123,58 @@ export default function HomePage() {
           {tokenIn && tokenOut ? "Nhập số lượng" : "Chọn token"}
         </button>
 
-        {/* Task note */}
-        <p className="text-center text-xs text-slate-400 mt-3">
-          Task 4.2 sẽ hoàn thiện logic Swap đầy đủ
-        </p>
+        {/* [Task 4.5] Demo TX Toast — 3 test buttons cho Pending/Success/Error */}
+        {/**
+         * DEMO ONLY: Kiểm tra TransactionToast. sẽ xóa sau khi Task 4.2 hoàn thiện.
+         * [FR-01.5] showTxToast() được gọi từ đây để test notification system
+         */}
+        <div className="mt-4 pt-4 border-t border-slate-100">
+          <p className="text-xs text-slate-400 text-center mb-2">
+            Test TX Notifications (Task 4.5)
+          </p>
+          <div className="flex gap-2">
+            {/* Pending Toast */}
+            <button
+              onClick={() =>
+                showTxToast("pending", {
+                  description: "Swap USDT → DAI",
+                })
+              }
+              className="flex-1 text-xs py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors duration-200"
+            >
+              Pending
+            </button>
+            {/* Success Toast */}
+            <button
+              onClick={() =>
+                showSwapToast(
+                  "success",
+                  "USDT",
+                  "DAI",
+                  "0xabc123def456abc123def456abc123def456abc123def456abc123def456abcd"
+                )
+              }
+              className="flex-1 text-xs py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors duration-200"
+            >
+              Success
+            </button>
+            {/* Error Toast */}
+            <button
+              onClick={() =>
+                showTxToast("error", {
+                  description: "Swap USDT → DAI",
+                  errorMessage:
+                    "execution reverted: UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT",
+                })
+              }
+              className="flex-1 text-xs py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 transition-colors duration-200"
+            >
+              Error
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+
