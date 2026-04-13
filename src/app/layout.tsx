@@ -17,6 +17,10 @@ import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
+// [Task 3.6] TooltipProvider: wrap toàn app để Tooltip hoạt động [FR-01.4]
+import { TooltipProvider } from "@/components/ui/tooltip";
+// [Task 3.6] Toaster (Sonner): hiển thị TX notifications toàn app [FR-01.5] [FR-02.4] [FR-03.2]
+import { Toaster } from "@/components/ui/sonner";
 
 /**
  * [frontend-design.md §3] JetBrains Mono — Monospace font cho DEX
@@ -73,14 +77,19 @@ export default function RootLayout({
        * antialiased: smooth font rendering cho số dư và addresses
        */}
       <body className="font-mono bg-slate-50 text-slate-900 min-h-screen antialiased">
-        {/* [UC-01] Navbar chứa nút Connect Wallet — sẽ hoàn thiện ở Task 3.2 */}
-        <Navbar />
-        {/*
-         * [NFR-02] Main content wrapper
-         * max-w-7xl: giới hạn chiều rộng tối đa
-         * mx-auto px-4 py-8: căn giữa và padding chuẩn
-         */}
-        <main className="max-w-7xl mx-auto px-4 py-8">{children}</main>
+        {/* [Task 3.6] TooltipProvider: wrap toàn app để Tooltip hoạt động [FR-01.4] */}
+        <TooltipProvider>
+          {/* [UC-01] Navbar chứa nút Connect Wallet — sẽ hoàn thiện ở Task 3.2 */}
+          <Navbar />
+          {/*
+           * [NFR-02] Main content wrapper
+           * max-w-7xl: giới hạn chiều rộng tối đa
+           * mx-auto px-4 py-8: căn giữa và padding chuẩn
+           */}
+          <main className="max-w-7xl mx-auto px-4 py-8">{children}</main>
+          {/* [Task 3.6] Toaster: TX notifications (Pending/Success/Error) [FR-01.5] [FR-02.4] [FR-03.2] */}
+          <Toaster />
+        </TooltipProvider>
       </body>
     </html>
   );
