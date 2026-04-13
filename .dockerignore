@@ -1,0 +1,49 @@
+# [Task 1.5] .dockerignore — Loại bỏ file không cần thiết khỏi Docker build context
+# Giảm kích thước image và tránh copy các file nhạy cảm/không cần thiết vào container.
+
+# ─── Node.js ───────────────────────────────────────────
+# node_modules sẽ được cài lại trong container qua npm ci
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── Git & CI ───────────────────────────────────────────
+.git/
+.github/
+.gitignore
+.gitattributes
+
+# ─── Next.js Build Cache ────────────────────────────────
+# Thư mục build output local - sẽ được tạo lại trong Stage builder
+.next/
+out/
+
+# ─── Hardhat / Smart Contract ───────────────────────────
+# Không cần Smart Contract khi build Frontend image
+contracts/
+ignition/
+artifacts/
+cache/
+typechain-types/
+
+# ─── Tài liệu ────────────────────────────────────────────
+docs/
+
+# ─── Biến môi trường (bảo mật) ──────────────────────────
+# .env thật không được copy vào image (dùng env_file trong compose thay thế)
+.env
+.env.local
+.env.production
+
+# ─── Editor & OS ────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ─── Testing ────────────────────────────────────────────
+coverage/
+test-results/
