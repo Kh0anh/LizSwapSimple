@@ -1,0 +1,35 @@
+# [NFR-02] Docker Compose — LizSwapSimple DEX Frontend
+# Khởi động Frontend tĩnh tại localhost:3000 chỉ với lệnh:
+#   docker compose up --build
+#
+# Yêu cầu: Docker Engine >= 24 / Docker Desktop
+# Không cần Node.js cài sẵn trên máy host.
+
+services:
+  frontend:
+    # Build image từ Dockerfile tại thư mục root (.)
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Target stage runner (production-ready, bỏ qua builder artifacts)
+      target: runner
+
+    # Map port: host:3000 → container:80 (nginx listen port 80)
+    ports:
+      - "3000:80"
+
+    # Inject biến môi trường từ file .env vào container build
+    # Các biến NEXT_PUBLIC_* cần có khi build (không phải runtime)
+    env_file:
+      - .env
+
+    # Restart policy: Tự động khởi động lại nếu container crash
+    restart: unless-stopped
+
+    # Health check: Kiểm tra nginx đang hoạt động mỗi 30s
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
