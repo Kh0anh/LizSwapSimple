@@ -4,9 +4,13 @@
 // Mọi giá trị nhạy cảm đọc từ configVariable — tuyệt đối không hardcode
 // ============================================================================
 import { configVariable, defineConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+
 
 export default defineConfig({
+  // Plugins — Hardhat v3 yêu cầu khai báo rõ ràng trong mảng plugins
+  plugins: [hardhatToolboxMochaEthers],
+
   // ---------------------------------------------------------------------------
   // [NFR-03] / Tech Stack §1 — Solidity Compiler 0.8.20, Optimizer runs: 200
   // ---------------------------------------------------------------------------
@@ -17,6 +21,16 @@ export default defineConfig({
         enabled: true,
         runs: 200,
       },
+    },
+  },
+
+  // ---------------------------------------------------------------------------
+  // Mocha test runner configuration — Hardhat v3 dùng `test.mocha` (không phải `mocha`)
+  // Timeout 60s để cho phép deploy contract phức tạp trên mạng in-process
+  // ---------------------------------------------------------------------------
+  test: {
+    mocha: {
+      timeout: 60000,
     },
   },
 
