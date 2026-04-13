@@ -23,9 +23,10 @@
 @theme inline {
     /* === Font System === */
     /* [frontend-design.md §3] JetBrains Mono — font duy nhất cho toàn bộ hệ thống */
-    --font-sans: 'JetBrains Mono', monospace;
-    --font-mono: 'JetBrains Mono', monospace;
-    --font-heading: 'JetBrains Mono', monospace;
+    /* Sử dụng CSS variable từ next/font/google để tối ưu font loading */
+    --font-sans: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
+    --font-mono: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
+    --font-heading: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
 
     /* === Color Token Mapping (CSS Variables → Tailwind classes) === */
     /* [frontend-design.md §5] Ánh xạ CSS variables để dùng bg-background, text-foreground, ... */
