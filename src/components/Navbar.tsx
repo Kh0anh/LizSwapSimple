@@ -1,33 +1,198 @@
+"use client";
+
 /**
- * [UC-01] Navbar Component — Placeholder
- * Task 3.1: Tạo skeleton Navbar để Root Layout có thể import
- *
- * ⚠️ PLACEHOLDER: Component này sẽ được hoàn thiện đầy đủ tại Task 3.2
- * - Task 3.2 sẽ thêm: Logo gradient, Link Swap/Pool, WalletConnectButton, responsive
- * - Task 3.4 sẽ tích hợp WalletConnectButton vào đây
+ * Navbar Component — LizSwapSimple DEX
+ * Task 3.2: Navbar Component (thay thế placeholder từ Task 3.1)
  *
  * Yêu cầu liên quan:
- * - [UC-01] Kết nối ví Web3 — entry point trong Navbar
- * - [FR-01.1] Nút Connect Wallet hiển thị trong Navbar
- * - frontend-design.md §2, §4: màu sắc và micro-animations sẽ thêm ở Task 3.2
+ * - [UC-01] Kết nối ví MetaMask — WalletConnectButton bên phải
+ * - [FR-01.1] Navigation đến Swap page (trang chính)
+ * - frontend-design.md §2: màu sắc, typography
+ * - frontend-design.md §4: micro-animations, transitions
+ * - project-structure.md §2: vị trí file src/components/Navbar.tsx
+ *
+ * Cấu trúc:
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │  🦎 LizSwap  │  Swap  Pool  │  [Kết nối Ví]               │
+ * └─────────────────────────────────────────────────────────────┘
+ *
+ * - Logo: gradient text từ sky-400 → blue-500 [frontend-design.md §2.2]
+ * - Nav links: Swap (/), Pool (/pool) — active state dùng usePathname()
+ * - WalletConnectButton: slot bên phải [UC-01]
+ * - Container: sticky, glassmorphism bg-white/80 backdrop-blur-md [frontend-design.md §2.1]
+ * - Responsive: mobile thu gọn nav links theo flexbox
  */
 
-export function Navbar() {
-  return (
-    // [frontend-design.md §2.1] bg-white với border-bottom slate-200
-    // Navbar sticky top để luôn hiển thị khi scroll
-    <nav className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-sm">
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        {/* Logo placeholder — Task 3.2 sẽ thay bằng Logo gradient chính thức */}
-        <span className="font-mono font-bold text-slate-900 text-lg tracking-tight">
-          {/* [frontend-design.md §2.2] gradient-primary-text cho logo */}
-          LizSwap
-        </span>
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { WalletConnectButton } from "@/components/web3/WalletConnectButton";
 
-        {/* Navigation links + WalletConnectButton — Task 3.2 & 3.4 sẽ hoàn thiện */}
-        <div className="flex items-center gap-4">
-          {/* Placeholder navigation — sẽ được thay thế ở Task 3.2 */}
+// ─── Nav Links Config ────────────────────────────────────────────────────────
+
+/**
+ * Danh sách navigation links theo [FR-01.1]
+ * href phải khớp với cấu trúc route trong Next.js App Router
+ */
+const NAV_LINKS = [
+  {
+    label: "Swap",
+    href: "/",
+    /** [UC-03] Trang hoán đổi token chính */
+  },
+  {
+    label: "Pool",
+    href: "/pool",
+    /** [UC-04] [UC-05] Trang quản lý thanh khoản */
+  },
+] as const;
+
+// ─── NavLink Component ────────────────────────────────────────────────────────
+
+/**
+ * [FR-01.1] NavLink — link điều hướng với active state
+ *
+ * Active: text-sky-500 font-semibold [frontend-design.md §2.2]
+ * Inactive: text-slate-500 hover:text-sky-500 [frontend-design.md §2.3]
+ * Transition: duration-200 [frontend-design.md §4]
+ */
+function NavLink({
+  href,
+  label,
+  isActive,
+}: {
+  href: string;
+  label: string;
+  isActive: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        // Base styles
+        "relative text-sm font-medium transition-colors duration-200",
+        // Padding cho click area
+        "px-1 py-1",
+        // [frontend-design.md §4] Underline indicator animation
+        "after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full",
+        "after:rounded-full after:transition-all after:duration-200",
+        // Active state [frontend-design.md §2.2]
+        isActive
+          ? "text-sky-500 font-semibold after:bg-sky-500 after:scale-x-100"
+          : // Inactive: hover → sky-500, underline hidden [frontend-design.md §2.3]
+            "text-slate-500 hover:text-sky-500 after:bg-sky-400 after:scale-x-0 hover:after:scale-x-100"
+      )}
+    >
+      {label}
+    </Link>
+  );
+}
+
+// ─── Navbar (Main Component) ──────────────────────────────────────────────────
+
+/**
+ * [UC-01] [FR-01.1] Navbar — Thanh điều hướng cố định trên cùng
+ *
+ * Glassmorphism style [frontend-design.md §2.1]:
+ * - bg-white/80: nền trắng với 80% opacity
+ * - backdrop-blur-md: blur effect phía sau
+ * - border-b border-slate-200: đường kẻ dưới mảnh
+ * - sticky top-0 z-50: cố định và đè lên nội dung
+ */
+export function Navbar() {
+  // [FR-01.1] Theo dõi route hiện tại để highlight nav link đúng
+  const pathname = usePathname();
+
+  return (
+    <nav
+      // [frontend-design.md §2.1] Glassmorphism container — theo spec task-3.2.md
+      className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-md"
+      aria-label="Navigation chính"
+    >
+      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+
+        {/* ── Logo ──────────────────────────────────────────────────────── */}
+        {/**
+         * [frontend-design.md §2.2] Logo gradient sky-400 → blue-500
+         * bg-gradient-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent
+         * [frontend-design.md §3] font-mono — JetBrains Mono cho toàn app
+         * [frontend-design.md §4] hover:scale-[1.02] micro-animation
+         */}
+        <Link
+          href="/"
+          className={cn(
+            "font-mono font-bold text-xl tracking-tight",
+            "transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]",
+            // Gradient text [frontend-design.md §2.2]
+            "bg-gradient-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent",
+            // Shrink-0 để không bị thu hẹp trên mobile
+            "shrink-0"
+          )}
+          aria-label="LizSwap — Trang chủ"
+        >
+          LizSwap
+        </Link>
+
+        {/* ── Center: Navigation Links ──────────────────────────────────── */}
+        {/**
+         * [FR-01.1] Navigation links — Swap và Pool
+         * Responsive: hidden trên xs, flex trên sm+
+         * gap-6: khoảng cách giữa các links
+         */}
+        <div
+          className={cn(
+            "flex items-center gap-6",
+            // Responsive: ở mobile thu gọn (ẩn label nếu cần)
+            "hidden sm:flex"
+          )}
+          role="navigation"
+          aria-label="Trang chính"
+        >
+          {NAV_LINKS.map((link) => (
+            <NavLink
+              key={link.href}
+              href={link.href}
+              label={link.label}
+              isActive={pathname === link.href}
+            />
+          ))}
         </div>
+
+        {/* ── Right: Mobile Nav + WalletConnectButton ───────────────────── */}
+        <div className="flex items-center gap-3 ml-auto sm:ml-0">
+
+          {/* Mobile nav links — hiển thị khi sm hidden */}
+          <div
+            className="flex items-center gap-4 sm:hidden"
+            aria-label="Mobile navigation"
+          >
+            {NAV_LINKS.map((link) => (
+              // Mobile: hiển thị label gọn hơn, không có underline animation
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "text-xs font-medium transition-colors duration-200",
+                  pathname === link.href
+                    ? "text-sky-500 font-semibold"
+                    : "text-slate-500 hover:text-sky-500"
+                )}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+
+          {/* [UC-01] WalletConnectButton — entry point kết nối MetaMask */}
+          {/**
+           * Task 3.4: WalletConnectButton đã được implement bởi Huy (dev/huy)
+           * - Chưa kết nối: nút gradient "Kết nối Ví"
+           * - Đang kết nối: spinner + disabled
+           * - Đã kết nối: address rút gọn + dropdown Ngắt kết nối
+           */}
+          <WalletConnectButton />
+        </div>
+
       </div>
     </nav>
   );
