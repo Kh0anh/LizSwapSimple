@@ -1,7 +1,7 @@
 /**
  * [NFR-02] Root Layout — LizSwapSimple DEX
  * Task 3.1: Root Layout & Google Font Integration [frontend-design.md §3] [NFR-02]
- *
+ * Task 4.5: Đã tích hợp <Toaster /> cho Transaction Notification System [FR-01.5]
  * Yêu cầu liên quan:
  * - [NFR-02] Frontend Tĩnh: static export, không có server-side logic
  * - frontend-design.md §3: JetBrains Mono — font duy nhất cho toàn bộ hệ thống DEX
@@ -19,7 +19,9 @@ import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 // [Task 3.6] TooltipProvider: wrap toàn app để Tooltip hoạt động [FR-01.4]
 import { TooltipProvider } from "@/components/ui/tooltip";
-// [Task 3.6] Toaster (Sonner): hiển thị TX notifications toàn app [FR-01.5] [FR-02.4] [FR-03.2]
+// [Task 3.6] [Task 4.5] Toaster (Sonner): hiển thị TX notifications toàn app
+// showTxToast() từ TransactionToast.tsx sẽ dùng Toaster này để fire notifications
+// [FR-01.5] Swap TX — [FR-02.4] Add Liquidity — [FR-03.2] Remove Liquidity — [UC-02] Approve
 import { Toaster } from "@/components/ui/sonner";
 
 /**
