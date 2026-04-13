@@ -11,16 +11,17 @@
  * - frontend-design.md §4: micro-animations, transitions
  * - project-structure.md §2: vị trí file src/components/Navbar.tsx
  *
- * Cấu trúc:
+ * Cấu trúc layout:
  * ┌─────────────────────────────────────────────────────────────┐
- * │  🦎 LizSwap  │  Swap  Pool  │  [Kết nối Ví]               │
+ * │  🦎 LizSwap  │     Swap   Pool     │  [Kết nối Ví]         │
  * └─────────────────────────────────────────────────────────────┘
+ *   (shrink-0)       (flex-1 center)        (shrink-0)
  *
  * - Logo: gradient text từ sky-400 → blue-500 [frontend-design.md §2.2]
  * - Nav links: Swap (/), Pool (/pool) — active state dùng usePathname()
  * - WalletConnectButton: slot bên phải [UC-01]
  * - Container: sticky, glassmorphism bg-white/80 backdrop-blur-md [frontend-design.md §2.1]
- * - Responsive: mobile thu gọn nav links theo flexbox
+ * - Responsive: mobile thu gọn nav links
  */
 
 import Link from "next/link";
@@ -98,6 +99,9 @@ function NavLink({
  * - backdrop-blur-md: blur effect phía sau
  * - border-b border-slate-200: đường kẻ dưới mảnh
  * - sticky top-0 z-50: cố định và đè lên nội dung
+ *
+ * Layout (justify-between):
+ * [Logo]  ──────────  [Swap | Pool]  ──────────  [WalletConnectButton]
  */
 export function Navbar() {
   // [FR-01.1] Theo dõi route hiện tại để highlight nav link đúng
@@ -105,46 +109,38 @@ export function Navbar() {
 
   return (
     <nav
-      // [frontend-design.md §2.1] Glassmorphism container — theo spec task-3.2.md
+      // [frontend-design.md §2.1] Glassmorphism container
       className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-md"
       aria-label="Navigation chính"
     >
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
 
-        {/* ── Logo ──────────────────────────────────────────────────────── */}
+        {/* ── Logo (Left) ───────────────────────────────────────────────── */}
         {/**
          * [frontend-design.md §2.2] Logo gradient sky-400 → blue-500
-         * bg-gradient-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent
-         * [frontend-design.md §3] font-mono — JetBrains Mono cho toàn app
+         * [frontend-design.md §3] font-mono — JetBrains Mono
          * [frontend-design.md §4] hover:scale-[1.02] micro-animation
          */}
         <Link
           href="/"
           className={cn(
-            "font-mono font-bold text-xl tracking-tight",
+            "font-mono font-bold text-xl tracking-tight shrink-0",
             "transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]",
             // Gradient text [frontend-design.md §2.2]
-            "bg-gradient-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent",
-            // Shrink-0 để không bị thu hẹp trên mobile
-            "shrink-0"
+            "bg-gradient-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent"
           )}
           aria-label="LizSwap — Trang chủ"
         >
-          LizSwap
+          🦎 LizSwap
         </Link>
 
-        {/* ── Center: Navigation Links ──────────────────────────────────── */}
+        {/* ── Center: Desktop Navigation Links ──────────────────────────── */}
         {/**
-         * [FR-01.1] Navigation links — Swap và Pool
-         * Responsive: hidden trên xs, flex trên sm+
-         * gap-6: khoảng cách giữa các links
+         * [FR-01.1] Swap và Pool — ẩn trên mobile (sm:flex)
+         * flex-1 justify-center: canh giữa giữa Logo và WalletButton
          */}
         <div
-          className={cn(
-            "flex items-center gap-6",
-            // Responsive: ở mobile thu gọn (ẩn label nếu cần)
-            "hidden sm:flex"
-          )}
+          className="hidden sm:flex flex-1 items-center justify-center gap-8"
           role="navigation"
           aria-label="Trang chính"
         >
@@ -156,23 +152,17 @@ export function Navbar() {
               isActive={pathname === link.href}
             />
           ))}
-        {/* Navigation links + WalletConnectButton — Task 3.2 & 3.4 sẽ hoàn thiện */}
-        <div className="flex items-center gap-4">
-          {/* Placeholder navigation — sẽ được thay thế ở Task 3.2 */}
-          {/* [UC-01] Task 3.4: Wallet connect entry point */}
-          <WalletConnectButton />
         </div>
 
         {/* ── Right: Mobile Nav + WalletConnectButton ───────────────────── */}
-        <div className="flex items-center gap-3 ml-auto sm:ml-0">
+        <div className="flex items-center gap-3 shrink-0">
 
-          {/* Mobile nav links — hiển thị khi sm hidden */}
+          {/* Mobile nav links — hiển thị chỉ khi < sm */}
           <div
             className="flex items-center gap-4 sm:hidden"
             aria-label="Mobile navigation"
           >
             {NAV_LINKS.map((link) => (
-              // Mobile: hiển thị label gọn hơn, không có underline animation
               <Link
                 key={link.href}
                 href={link.href}
@@ -190,8 +180,8 @@ export function Navbar() {
 
           {/* [UC-01] WalletConnectButton — entry point kết nối MetaMask */}
           {/**
-           * Task 3.4: WalletConnectButton đã được implement bởi Huy (dev/huy)
-           * - Chưa kết nối: nút gradient "Kết nối Ví"
+           * Task 3.4: WalletConnectButton (Huy) đã implement:
+           * - Chưa kết nối: gradient "Kết nối Ví"
            * - Đang kết nối: spinner + disabled
            * - Đã kết nối: address rút gọn + dropdown Ngắt kết nối
            */}
