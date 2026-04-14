@@ -16,6 +16,11 @@ services:
       dockerfile: Dockerfile
       # Target stage runner (production-ready, bỏ qua builder artifacts)
       target: runner
+      args:
+        NEXT_PUBLIC_CHAIN_ID: ${NEXT_PUBLIC_CHAIN_ID}
+        NEXT_PUBLIC_RPC_URL: ${NEXT_PUBLIC_RPC_URL}
+        NEXT_PUBLIC_ROUTER_ADDRESS: ${NEXT_PUBLIC_ROUTER_ADDRESS}
+        NEXT_PUBLIC_FACTORY_ADDRESS: ${NEXT_PUBLIC_FACTORY_ADDRESS}
 
     # Map port: host:3000 → container:80 (nginx listen port 80)
     ports:

@@ -15,6 +15,17 @@ COPY package.json package-lock.json ./
 # Cài đặt dependencies (ci = clean install, nhanh hơn npm install)
 RUN npm ci
 
+# [NFR-03] Truyen bien moi truong NEXT_PUBLIC_* vao buoc build static.
+ARG NEXT_PUBLIC_CHAIN_ID
+ARG NEXT_PUBLIC_RPC_URL
+ARG NEXT_PUBLIC_ROUTER_ADDRESS
+ARG NEXT_PUBLIC_FACTORY_ADDRESS
+
+ENV NEXT_PUBLIC_CHAIN_ID=$NEXT_PUBLIC_CHAIN_ID
+ENV NEXT_PUBLIC_RPC_URL=$NEXT_PUBLIC_RPC_URL
+ENV NEXT_PUBLIC_ROUTER_ADDRESS=$NEXT_PUBLIC_ROUTER_ADDRESS
+ENV NEXT_PUBLIC_FACTORY_ADDRESS=$NEXT_PUBLIC_FACTORY_ADDRESS
+
 # Copy toàn bộ mã nguồn dự án vào container
 COPY . .
 
