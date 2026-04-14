@@ -160,12 +160,36 @@ async function getAllowance(
   ownerAddress: string,
   spenderAddress: string,
 ): Promise<bigint> {
-  const token = createErc20Contract(tokenAddress, getReadProvider(provider));
-  const allowance = await token.allowance(
-    requireAddress(ownerAddress, "ownerAddress"),
-    requireAddress(spenderAddress, "spenderAddress"),
-  );
-  return allowance as bigint;
+  const readProvider = getReadProvider(provider);
+  const normalizedTokenAddress = requireAddress(tokenAddress, "tokenAddress");
+
+  // [UC-02] Một số token address có thể chưa được deploy trên network hiện tại.
+  // Trường hợp này RPC trả BAD_DATA khi gọi allowance, nên fallback về 0.
+  const code = await readProvider.getCode(normalizedTokenAddress);
+  if (code === "0x") {
+    return 0n;
+  }
+
+  const token = createErc20Contract(normalizedTokenAddress, readProvider);
+
+  try {
+    const allowance = await token.allowance(
+      requireAddress(ownerAddress, "ownerAddress"),
+      requireAddress(spenderAddress, "spenderAddress"),
+    );
+    return allowance as bigint;
+  } catch (error) {
+    const codeValue =
+      typeof error === "object" && error !== null && "code" in error
+        ? String((error as { code?: unknown }).code ?? "")
+        : "";
+
+    if (codeValue === "BAD_DATA") {
+      return 0n;
+    }
+
+    throw error;
+  }
 }
 
 async function getAmountsOut(
