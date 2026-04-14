@@ -339,9 +339,29 @@ async function getTokenBalance(
     return provider.getBalance(normalizedAccount);
   }
 
+  // Return zero when address has no contract code on the current network
+  // to avoid BAD_DATA from calling ERC20 methods on non-contract addresses.
+  const code = await provider.getCode(normalizedTokenAddress);
+  if (code === "0x") {
+    return 0n;
+  }
+
   const token = createErc20Contract(normalizedTokenAddress, provider);
-  const balance = await token.balanceOf(normalizedAccount);
-  return balance as bigint;
+  try {
+    const balance = await token.balanceOf(normalizedAccount);
+    return balance as bigint;
+  } catch (error) {
+    const codeValue =
+      typeof error === "object" && error !== null && "code" in error
+        ? String((error as { code?: unknown }).code ?? "")
+        : "";
+
+    if (codeValue === "BAD_DATA") {
+      return 0n;
+    }
+
+    throw error;
+  }
 }
 
 export const swapService = {
