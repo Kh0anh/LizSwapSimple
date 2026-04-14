@@ -1,5 +1,17 @@
 "use client";
 
+/**
+ * Pool Page — LizSwapSimple DEX
+ * Task 4.3 + Task 4.4 + Task 4.6
+ *
+ * Yêu cầu liên quan:
+ * - [UC-04] Thêm Thanh khoản — Add Liquidity
+ * - [UC-05] Rút Thanh khoản — Remove Liquidity
+ * - [FR-02] Cung Cấp Thanh Khoản
+ * - [FR-03] Rút Thanh Khoản
+ * - [FR-02.4] ConfirmLiquidityDialog hiển thị tóm tắt trước khi gửi TX (Task 4.6)
+ */
+
 import * as React from "react";
 import {
   Contract,
@@ -19,6 +31,8 @@ import {
   showTxToast,
 } from "@/components/web3/TransactionToast";
 import { TokenSelector } from "@/components/web3/TokenSelector";
+// [Task 4.6] Import ConfirmLiquidityDialog [FR-02.4]
+import { ConfirmLiquidityDialog } from "@/components/web3/ConfirmLiquidityDialog";
 import { useWeb3 } from "@/hooks/useWeb3";
 import PairABI from "@/services/contracts/PairABI.json";
 import deployedAddresses from "@/services/contracts/deployedAddresses.json";
@@ -181,6 +195,9 @@ export default function PoolPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitStep, setSubmitStep] = React.useState("");
   const [uiError, setUiError] = React.useState<string | null>(null);
+
+  // [Task 4.6] State mở/đóng ConfirmLiquidityDialog [FR-02.4]
+  const [showConfirmLiquidityDialog, setShowConfirmLiquidityDialog] = React.useState(false);
 
   const readProvider = React.useMemo<Provider>(
     () => provider ?? new JsonRpcProvider(RPC_URL),
@@ -1275,6 +1292,10 @@ export default function PoolPage() {
               </div>
             )}
 
+            {/*
+             * [Task 4.6] Nút "Thêm Thanh Khoản" giờ mở ConfirmLiquidityDialog
+             * thay vì gọi handleAddLiquidity() trực tiếp [FR-02.4]
+             */}
             <button
               disabled={isSubmitting || isConnecting}
               onClick={() => {
@@ -1282,12 +1303,16 @@ export default function PoolPage() {
                   void connectWallet();
                   return;
                 }
-
-                void handleAddLiquidity();
+                // [Task 4.6] Mở ConfirmLiquidityDialog khi đã đủ thông tin
+                if (tokenA && tokenB && parsedAmountA && parsedAmountB) {
+                  setShowConfirmLiquidityDialog(true);
+                } else {
+                  void handleAddLiquidity();
+                }
               }}
               className={[
                 "w-full mt-4 rounded-xl py-3 text-lg font-semibold text-white",
-                "bg-linear-to-r from-sky-400 to-blue-500",
+                "bg-gradient-to-r from-sky-400 to-blue-500",
                 "transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-blue-500/25",
                 (isSubmitting || isConnecting) && "opacity-80 cursor-not-allowed",
               ].join(" ")}
@@ -1302,6 +1327,41 @@ export default function PoolPage() {
           </>
         )}
       </div>
+
+      {/* ── [Task 4.6] ConfirmLiquidityDialog [FR-02.4] [UC-04] ── */}
+      {/*
+       * Modal xác nhận trước khi gửi TX Add Liquidity
+       * Hiển thị: tokenA/B + amountA/B, LP token estimate, Share of Pool, Exchange Rate
+       * onConfirm → handleAddLiquidity() gửi TX on-chain
+       * [frontend-design.md §4] Fade/Zoom animation từ shadcn Dialog
+       */}
+      {tokenA && tokenB && (
+        <ConfirmLiquidityDialog
+          open={showConfirmLiquidityDialog}
+          onOpenChange={(open) => {
+            if (!isSubmitting) setShowConfirmLiquidityDialog(open);
+          }}
+          tokenA={tokenA}
+          tokenB={tokenB}
+          amountA={amountAInput}
+          amountB={amountBInput}
+          shareText={shareText}
+          lpEstimate={
+            lpReceivedEstimate !== null
+              ? formatAmountDisplay(lpReceivedEstimate, 18)
+              : null
+          }
+          exchangeRate={exchangeRateText}
+          isLoading={isSubmitting}
+          loadingStep={submitStep}
+          onConfirm={() => {
+            void handleAddLiquidity().then(() => {
+              // Đóng dialog sau khi xử lý xong (thành công hoặc lỗi)
+              setShowConfirmLiquidityDialog(false);
+            });
+          }}
+        />
+      )}
     </div>
   );
 }
