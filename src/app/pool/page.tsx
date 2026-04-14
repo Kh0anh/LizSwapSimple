@@ -359,13 +359,18 @@ export default function PoolPage() {
       return;
     }
 
-    const [nextBalanceA, nextBalanceB] = await Promise.all([
-      swapService.getTokenBalance(readProvider, tokenA.address, account),
-      swapService.getTokenBalance(readProvider, tokenB.address, account),
-    ]);
+    try {
+      const [nextBalanceA, nextBalanceB] = await Promise.all([
+        swapService.getTokenBalance(readProvider, tokenA.address, account),
+        swapService.getTokenBalance(readProvider, tokenB.address, account),
+      ]);
 
-    setBalanceA(nextBalanceA);
-    setBalanceB(nextBalanceB);
+      setBalanceA(nextBalanceA);
+      setBalanceB(nextBalanceB);
+    } catch {
+      setBalanceA(0n);
+      setBalanceB(0n);
+    }
   }, [account, readProvider, tokenA, tokenB]);
 
   const refreshPool = React.useCallback(async () => {
