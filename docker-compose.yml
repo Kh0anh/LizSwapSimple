@@ -7,6 +7,9 @@
 
 services:
   frontend:
+    # Luon build image moi khi chay `docker compose up` de tranh giao dien cu.
+    pull_policy: build
+
     # Build image từ Dockerfile tại thư mục root (.)
     build:
       context: .
