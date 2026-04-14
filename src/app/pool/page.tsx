@@ -47,6 +47,8 @@ type LiquidityPosition = {
 const TOKENS = tokenList as TokenInfo[];
 const DEPLOYED = deployedAddresses as DeployAddressMap;
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL ?? "http://127.0.0.1:8545";
+const ALLOW_DEPLOYED_FALLBACK =
+  process.env.NEXT_PUBLIC_ALLOW_DEPLOYED_FALLBACK === "true";
 const SLIPPAGE_BPS = 100n;
 const DEADLINE_SECONDS = 20 * 60;
 
@@ -63,7 +65,12 @@ function resolveConfiguredAddress(
     return envValue;
   }
 
-  if (fileValue && isAddress(fileValue) && fileValue !== ZeroAddress) {
+  if (
+    ALLOW_DEPLOYED_FALLBACK &&
+    fileValue &&
+    isAddress(fileValue) &&
+    fileValue !== ZeroAddress
+  ) {
     return fileValue;
   }
 
@@ -494,6 +501,20 @@ export default function PoolPage() {
       setIsLoadingPositions(false);
     }
   }, [account, factoryAddress, readProvider]);
+
+  React.useEffect(() => {
+    if (!routerAddress) {
+      setUiError("Chưa cấu hình NEXT_PUBLIC_ROUTER_ADDRESS.");
+      return;
+    }
+
+    if (!factoryAddress) {
+      setUiError("Chưa cấu hình NEXT_PUBLIC_FACTORY_ADDRESS.");
+      return;
+    }
+
+    setUiError(null);
+  }, [factoryAddress, routerAddress]);
 
   React.useEffect(() => {
     void refreshPool();

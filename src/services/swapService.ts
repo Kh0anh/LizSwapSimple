@@ -38,6 +38,8 @@ export type PairReserves = {
 
 const DEFAULT_RPC_URL = process.env.NEXT_PUBLIC_RPC_URL ?? "http://127.0.0.1:8545";
 const addressMap = deployedAddresses as DeployedAddressMap;
+const ALLOW_DEPLOYED_FALLBACK =
+  process.env.NEXT_PUBLIC_ALLOW_DEPLOYED_FALLBACK === "true";
 
 let readProvider: JsonRpcProvider | null = null;
 
@@ -83,12 +85,12 @@ function resolveRouterAddress(override?: string): string {
   }
 
   const fromFile = normalizeAddress(addressMap.router);
-  if (fromFile !== ZeroAddress) {
+  if (ALLOW_DEPLOYED_FALLBACK && fromFile !== ZeroAddress) {
     return fromFile;
   }
 
   throw new Error(
-    "Router address is not configured. Set NEXT_PUBLIC_ROUTER_ADDRESS or src/services/contracts/deployedAddresses.json.",
+    "Router address is not configured. Set NEXT_PUBLIC_ROUTER_ADDRESS.",
   );
 }
 
@@ -104,12 +106,12 @@ function resolveFactoryAddress(override?: string): string {
   }
 
   const fromFile = normalizeAddress(addressMap.factory);
-  if (fromFile !== ZeroAddress) {
+  if (ALLOW_DEPLOYED_FALLBACK && fromFile !== ZeroAddress) {
     return fromFile;
   }
 
   throw new Error(
-    "Factory address is not configured. Set NEXT_PUBLIC_FACTORY_ADDRESS or src/services/contracts/deployedAddresses.json.",
+    "Factory address is not configured. Set NEXT_PUBLIC_FACTORY_ADDRESS.",
   );
 }
 
