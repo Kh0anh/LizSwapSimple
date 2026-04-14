@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import {
+  Contract,
   JsonRpcProvider,
   ZeroAddress,
   formatUnits,
@@ -19,17 +20,28 @@ import {
 } from "@/components/web3/TransactionToast";
 import { TokenSelector } from "@/components/web3/TokenSelector";
 import { useWeb3 } from "@/hooks/useWeb3";
-import {
-  swapService,
-  type PairReserves,
-} from "@/services/swapService";
+import PairABI from "@/services/contracts/PairABI.json";
 import deployedAddresses from "@/services/contracts/deployedAddresses.json";
 import tokenList from "@/services/contracts/tokenList.json";
+import { swapService, type PairReserves } from "@/services/swapService";
 import type { TokenInfo } from "@/types/token";
 
 type DeployAddressMap = {
   factory?: string;
   router?: string;
+};
+
+type LiquidityPosition = {
+  pairAddress: string;
+  token0: TokenInfo;
+  token1: TokenInfo;
+  reserve0: bigint;
+  reserve1: bigint;
+  totalSupply: bigint;
+  userLpBalance: bigint;
+  pooledToken0: bigint;
+  pooledToken1: bigint;
+  sharePercent: number;
 };
 
 const TOKENS = tokenList as TokenInfo[];
@@ -38,8 +50,10 @@ const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL ?? "http://127.0.0.1:8545";
 const SLIPPAGE_BPS = 100n;
 const DEADLINE_SECONDS = 20 * 60;
 
-const DEFAULT_TOKEN_A = TOKENS.find((token) => token.symbol === "USDT") ?? TOKENS[0] ?? null;
-const DEFAULT_TOKEN_B = TOKENS.find((token) => token.symbol === "DAI") ?? TOKENS[1] ?? null;
+const DEFAULT_TOKEN_A =
+  TOKENS.find((token) => token.symbol === "USDT") ?? TOKENS[0] ?? null;
+const DEFAULT_TOKEN_B =
+  TOKENS.find((token) => token.symbol === "DAI") ?? TOKENS[1] ?? null;
 
 function resolveConfiguredAddress(
   envValue: string | undefined,
@@ -60,6 +74,10 @@ function isAmountInput(value: string): boolean {
   return /^\d*\.?\d*$/.test(value);
 }
 
+function isPercentInput(value: string): boolean {
+  return /^\d*\.?\d*$/.test(value);
+}
+
 function parseAmountUnits(value: string, decimals: number): bigint | null {
   if (!value.trim()) {
     return null;
@@ -74,9 +92,7 @@ function parseAmountUnits(value: string, decimals: number): bigint | null {
 
 function formatAmountForInput(value: bigint, decimals: number): string {
   const raw = formatUnits(value, decimals);
-  return raw
-    .replace(/(\.\d*?[1-9])0+$/, "$1")
-    .replace(/\.0+$/, "");
+  return raw.replace(/(\.\d*?[1-9])0+$/, "$1").replace(/\.0+$/, "");
 }
 
 function formatAmountDisplay(value: bigint, decimals: number): string {
@@ -99,6 +115,25 @@ function formatRatio(value: number, maxFractionDigits = 6): string {
   });
 }
 
+function resolveTokenMeta(address: string): TokenInfo {
+  const found = TOKENS.find(
+    (token) => token.address.toLowerCase() === address.toLowerCase(),
+  );
+
+  if (found) {
+    return found;
+  }
+
+  const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
+
+  return {
+    address,
+    symbol: shortAddress,
+    name: address,
+    decimals: 18,
+  };
+}
+
 export default function PoolPage() {
   const {
     account,
@@ -111,18 +146,34 @@ export default function PoolPage() {
   } = useWeb3();
 
   const [activeTab, setActiveTab] = React.useState<"add" | "remove">("add");
+
   const [tokenA, setTokenA] = React.useState<TokenInfo | null>(DEFAULT_TOKEN_A);
   const [tokenB, setTokenB] = React.useState<TokenInfo | null>(DEFAULT_TOKEN_B);
   const [amountAInput, setAmountAInput] = React.useState("");
   const [amountBInput, setAmountBInput] = React.useState("");
-  const [poolReserves, setPoolReserves] = React.useState<PairReserves | null>(null);
+
+  const [poolReserves, setPoolReserves] = React.useState<PairReserves | null>(
+    null,
+  );
   const [balanceA, setBalanceA] = React.useState<bigint>(0n);
   const [balanceB, setBalanceB] = React.useState<bigint>(0n);
+  const [lpReceivedEstimate, setLpReceivedEstimate] = React.useState<bigint | null>(
+    null,
+  );
+
+  const [liquidityPositions, setLiquidityPositions] = React.useState<
+    LiquidityPosition[]
+  >([]);
+  const [selectedPairAddress, setSelectedPairAddress] = React.useState("");
+  const [removePercentInput, setRemovePercentInput] = React.useState("25");
+  const [lpAllowance, setLpAllowance] = React.useState<bigint>(0n);
+  const [isLoadingLpAllowance, setIsLoadingLpAllowance] = React.useState(false);
+
   const [isLoadingPool, setIsLoadingPool] = React.useState(false);
+  const [isLoadingPositions, setIsLoadingPositions] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitStep, setSubmitStep] = React.useState("");
   const [uiError, setUiError] = React.useState<string | null>(null);
-  const [lpReceivedEstimate, setLpReceivedEstimate] = React.useState<bigint | null>(null);
 
   const readProvider = React.useMemo<Provider>(
     () => provider ?? new JsonRpcProvider(RPC_URL),
@@ -130,12 +181,20 @@ export default function PoolPage() {
   );
 
   const routerAddress = React.useMemo(
-    () => resolveConfiguredAddress(process.env.NEXT_PUBLIC_ROUTER_ADDRESS, DEPLOYED.router),
+    () =>
+      resolveConfiguredAddress(
+        process.env.NEXT_PUBLIC_ROUTER_ADDRESS,
+        DEPLOYED.router,
+      ),
     [],
   );
 
   const factoryAddress = React.useMemo(
-    () => resolveConfiguredAddress(process.env.NEXT_PUBLIC_FACTORY_ADDRESS, DEPLOYED.factory),
+    () =>
+      resolveConfiguredAddress(
+        process.env.NEXT_PUBLIC_FACTORY_ADDRESS,
+        DEPLOYED.factory,
+      ),
     [],
   );
 
@@ -150,7 +209,9 @@ export default function PoolPage() {
   );
 
   const hasValidPair = Boolean(
-    tokenA && tokenB && tokenA.address.toLowerCase() !== tokenB.address.toLowerCase(),
+    tokenA &&
+      tokenB &&
+      tokenA.address.toLowerCase() !== tokenB.address.toLowerCase(),
   );
 
   const hasExistingPool = Boolean(
@@ -162,13 +223,60 @@ export default function PoolPage() {
 
   const isCreatingPool = hasValidPair && !isLoadingPool && !hasExistingPool;
 
-  const balanceTextA = tokenA
-    ? formatAmountDisplay(balanceA, tokenA.decimals)
-    : "0";
+  const selectedPosition = React.useMemo(() => {
+    if (liquidityPositions.length === 0) {
+      return null;
+    }
 
-  const balanceTextB = tokenB
-    ? formatAmountDisplay(balanceB, tokenB.decimals)
-    : "0";
+    const found = liquidityPositions.find(
+      (position) =>
+        position.pairAddress.toLowerCase() === selectedPairAddress.toLowerCase(),
+    );
+
+    return found ?? liquidityPositions[0];
+  }, [liquidityPositions, selectedPairAddress]);
+
+  const removePercent = React.useMemo(() => {
+    const parsed = Number(removePercentInput);
+
+    if (!Number.isFinite(parsed)) {
+      return 0;
+    }
+
+    return Math.max(0, Math.min(100, parsed));
+  }, [removePercentInput]);
+
+  const removeBps = React.useMemo(
+    () => BigInt(Math.round(removePercent * 100)),
+    [removePercent],
+  );
+
+  const removeLpAmount = React.useMemo(() => {
+    if (!selectedPosition || removeBps <= 0n) {
+      return 0n;
+    }
+
+    return (selectedPosition.userLpBalance * removeBps) / 10000n;
+  }, [removeBps, selectedPosition]);
+
+  const previewToken0Amount = React.useMemo(() => {
+    if (!selectedPosition || selectedPosition.totalSupply <= 0n || removeLpAmount <= 0n) {
+      return 0n;
+    }
+
+    return (selectedPosition.reserve0 * removeLpAmount) / selectedPosition.totalSupply;
+  }, [removeLpAmount, selectedPosition]);
+
+  const previewToken1Amount = React.useMemo(() => {
+    if (!selectedPosition || selectedPosition.totalSupply <= 0n || removeLpAmount <= 0n) {
+      return 0n;
+    }
+
+    return (selectedPosition.reserve1 * removeLpAmount) / selectedPosition.totalSupply;
+  }, [removeLpAmount, selectedPosition]);
+
+  const balanceTextA = tokenA ? formatAmountDisplay(balanceA, tokenA.decimals) : "0";
+  const balanceTextB = tokenB ? formatAmountDisplay(balanceB, tokenB.decimals) : "0";
 
   const exchangeRateText = React.useMemo(() => {
     if (!tokenA || !tokenB) {
@@ -278,14 +386,103 @@ export default function PoolPage() {
     } catch (error) {
       setPoolReserves(null);
       setUiError(
-        error instanceof Error
-          ? error.message
-          : "Không thể đọc trạng thái Pool.",
+        error instanceof Error ? error.message : "Không thể đọc trạng thái Pool.",
       );
     } finally {
       setIsLoadingPool(false);
     }
   }, [factoryAddress, hasValidPair, readProvider, tokenA, tokenB]);
+
+  const refreshPositions = React.useCallback(async () => {
+    if (!account || !factoryAddress) {
+      setLiquidityPositions([]);
+      setSelectedPairAddress("");
+      return;
+    }
+
+    setIsLoadingPositions(true);
+
+    try {
+      const factory = swapService.getFactoryContract(readProvider, factoryAddress);
+      const length = Number((await factory.allPairsLength()) as bigint);
+      const nextPositions: LiquidityPosition[] = [];
+
+      for (let index = 0; index < length; index += 1) {
+        const pairAddress = (await factory.allPairs(index)) as string;
+
+        if (!isAddress(pairAddress) || pairAddress === ZeroAddress) {
+          continue;
+        }
+
+        const pair = new Contract(pairAddress, PairABI, readProvider);
+        const userLpBalance = (await pair.balanceOf(account)) as bigint;
+
+        if (userLpBalance <= 0n) {
+          continue;
+        }
+
+        const totalSupply = (await pair.totalSupply()) as bigint;
+
+        if (totalSupply <= 0n) {
+          continue;
+        }
+
+        const reserves = (await pair.getReserves()) as [bigint, bigint, bigint];
+        const token0Address = (await pair.token0()) as string;
+        const token1Address = (await pair.token1()) as string;
+
+        const token0 = resolveTokenMeta(token0Address);
+        const token1 = resolveTokenMeta(token1Address);
+
+        const pooledToken0 = (reserves[0] * userLpBalance) / totalSupply;
+        const pooledToken1 = (reserves[1] * userLpBalance) / totalSupply;
+        const sharePercent =
+          Number((userLpBalance * 1_000_000n) / totalSupply) / 10_000;
+
+        nextPositions.push({
+          pairAddress,
+          token0,
+          token1,
+          reserve0: reserves[0],
+          reserve1: reserves[1],
+          totalSupply,
+          userLpBalance,
+          pooledToken0,
+          pooledToken1,
+          sharePercent,
+        });
+      }
+
+      setLiquidityPositions(nextPositions);
+      setSelectedPairAddress((previous) => {
+        if (nextPositions.length === 0) {
+          return "";
+        }
+
+        if (
+          previous &&
+          nextPositions.some(
+            (position) =>
+              position.pairAddress.toLowerCase() === previous.toLowerCase(),
+          )
+        ) {
+          return previous;
+        }
+
+        return nextPositions[0].pairAddress;
+      });
+    } catch (error) {
+      setLiquidityPositions([]);
+      setSelectedPairAddress("");
+      setUiError(
+        error instanceof Error
+          ? error.message
+          : "Không thể tải danh sách LP positions.",
+      );
+    } finally {
+      setIsLoadingPositions(false);
+    }
+  }, [account, factoryAddress, readProvider]);
 
   React.useEffect(() => {
     void refreshPool();
@@ -294,6 +491,59 @@ export default function PoolPage() {
   React.useEffect(() => {
     void refreshBalances();
   }, [refreshBalances]);
+
+  React.useEffect(() => {
+    if (activeTab !== "remove") {
+      return;
+    }
+
+    void refreshPositions();
+  }, [activeTab, refreshPositions]);
+
+  React.useEffect(() => {
+    if (!selectedPosition) {
+      setLpAllowance(0n);
+      return;
+    }
+
+    if (!account || !routerAddress) {
+      setLpAllowance(0n);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadLpAllowance = async () => {
+      setIsLoadingLpAllowance(true);
+
+      try {
+        const allowance = await swapService.getAllowance(
+          readProvider,
+          selectedPosition.pairAddress,
+          account,
+          routerAddress,
+        );
+
+        if (!cancelled) {
+          setLpAllowance(allowance);
+        }
+      } catch {
+        if (!cancelled) {
+          setLpAllowance(0n);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingLpAllowance(false);
+        }
+      }
+    };
+
+    void loadLpAllowance();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [account, readProvider, routerAddress, selectedPosition]);
 
   React.useEffect(() => {
     if (!hasExistingPool || !poolReserves || !tokenB) {
@@ -387,12 +637,14 @@ export default function PoolPage() {
       if (allowanceA < amountAWei) {
         setSubmitStep(`Phê duyệt ${tokenA.symbol}...`);
         showApproveToast("pending", tokenA.symbol);
+
         const approveTxA = await swapService.approveToken(
           signer,
           tokenA.address,
           routerAddress,
           amountAWei,
         );
+
         await approveTxA.wait();
         showApproveToast("success", tokenA.symbol, approveTxA.hash);
       }
@@ -408,12 +660,14 @@ export default function PoolPage() {
       if (allowanceB < amountBWei) {
         setSubmitStep(`Phê duyệt ${tokenB.symbol}...`);
         showApproveToast("pending", tokenB.symbol);
+
         const approveTxB = await swapService.approveToken(
           signer,
           tokenB.address,
           routerAddress,
           amountBWei,
         );
+
         await approveTxB.wait();
         showApproveToast("success", tokenB.symbol, approveTxB.hash);
       }
@@ -432,6 +686,7 @@ export default function PoolPage() {
           account,
           BigInt(Math.floor(Date.now() / 1000) + DEADLINE_SECONDS),
         )) as [bigint, bigint, bigint];
+
         estimatedLiquidity = staticResult[2];
       } catch {
         estimatedLiquidity = null;
@@ -458,24 +713,16 @@ export default function PoolPage() {
 
       await addTx.wait();
 
-      showLiquidityToast(
-        "success",
-        "add",
-        tokenA.symbol,
-        tokenB.symbol,
-        addTx.hash,
-      );
+      showLiquidityToast("success", "add", tokenA.symbol, tokenB.symbol, addTx.hash);
 
       setLpReceivedEstimate(estimatedLiquidity);
       setAmountAInput("");
       setAmountBInput("");
 
-      await Promise.all([refreshPool(), refreshBalances()]);
+      await Promise.all([refreshPool(), refreshBalances(), refreshPositions()]);
     } catch (error) {
       const message =
-        error instanceof Error
-          ? error.message
-          : "Thêm thanh khoản thất bại.";
+        error instanceof Error ? error.message : "Thêm thanh khoản thất bại.";
 
       setUiError(message);
       showLiquidityToast(
@@ -499,13 +746,144 @@ export default function PoolPage() {
     readProvider,
     refreshBalances,
     refreshPool,
+    refreshPositions,
     routerAddress,
     signer,
     tokenA,
     tokenB,
   ]);
 
-  const mainActionLabel = React.useMemo(() => {
+  const handleRemoveLiquidity = React.useCallback(async () => {
+    if (!isConnected) {
+      await connectWallet();
+      return;
+    }
+
+    if (!selectedPosition || !signer || !account) {
+      setUiError("Vui lòng chọn vị thế thanh khoản.");
+      return;
+    }
+
+    if (!routerAddress) {
+      setUiError("Chưa cấu hình NEXT_PUBLIC_ROUTER_ADDRESS.");
+      return;
+    }
+
+    if (removeLpAmount <= 0n) {
+      setUiError("Vui lòng chọn tỷ lệ LP cần rút.");
+      return;
+    }
+
+    if (previewToken0Amount <= 0n || previewToken1Amount <= 0n) {
+      setUiError("Số lượng ước tính nhận về không hợp lệ.");
+      return;
+    }
+
+    setUiError(null);
+    setIsSubmitting(true);
+
+    try {
+      setSubmitStep("Kiểm tra allowance LP token...");
+
+      const allowance = await swapService.getAllowance(
+        readProvider,
+        selectedPosition.pairAddress,
+        account,
+        routerAddress,
+      );
+
+      if (allowance < removeLpAmount) {
+        setSubmitStep("Phê duyệt LP token...");
+        showApproveToast(
+          "pending",
+          `${selectedPosition.token0.symbol}/${selectedPosition.token1.symbol} LP`,
+        );
+
+        const approveTx = await swapService.approveToken(
+          signer,
+          selectedPosition.pairAddress,
+          routerAddress,
+          removeLpAmount,
+        );
+
+        await approveTx.wait();
+
+        showApproveToast(
+          "success",
+          `${selectedPosition.token0.symbol}/${selectedPosition.token1.symbol} LP`,
+          approveTx.hash,
+        );
+      }
+
+      const amount0Min = (previewToken0Amount * (10000n - SLIPPAGE_BPS)) / 10000n;
+      const amount1Min = (previewToken1Amount * (10000n - SLIPPAGE_BPS)) / 10000n;
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + DEADLINE_SECONDS);
+
+      setSubmitStep("Gửi giao dịch rút thanh khoản...");
+      showLiquidityToast(
+        "pending",
+        "remove",
+        selectedPosition.token0.symbol,
+        selectedPosition.token1.symbol,
+      );
+
+      const removeTx = await swapService.removeLiquidity(
+        signer,
+        selectedPosition.token0.address,
+        selectedPosition.token1.address,
+        removeLpAmount,
+        amount0Min,
+        amount1Min,
+        account,
+        deadline,
+      );
+
+      await removeTx.wait();
+
+      showLiquidityToast(
+        "success",
+        "remove",
+        selectedPosition.token0.symbol,
+        selectedPosition.token1.symbol,
+        removeTx.hash,
+      );
+
+      setRemovePercentInput("25");
+      await Promise.all([refreshPositions(), refreshPool(), refreshBalances()]);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Rút thanh khoản thất bại.";
+
+      setUiError(message);
+      showLiquidityToast(
+        "error",
+        "remove",
+        selectedPosition.token0.symbol,
+        selectedPosition.token1.symbol,
+        undefined,
+        message,
+      );
+    } finally {
+      setIsSubmitting(false);
+      setSubmitStep("");
+    }
+  }, [
+    account,
+    connectWallet,
+    isConnected,
+    previewToken0Amount,
+    previewToken1Amount,
+    readProvider,
+    refreshBalances,
+    refreshPool,
+    refreshPositions,
+    removeLpAmount,
+    routerAddress,
+    selectedPosition,
+    signer,
+  ]);
+
+  const addActionLabel = React.useMemo(() => {
     if (isConnecting) {
       return "Đang kết nối ví...";
     }
@@ -538,6 +916,47 @@ export default function PoolPage() {
     tokenB,
   ]);
 
+  const removeActionLabel = React.useMemo(() => {
+    if (isConnecting) {
+      return "Đang kết nối ví...";
+    }
+
+    if (!isConnected) {
+      return "Kết nối Ví";
+    }
+
+    if (isSubmitting) {
+      return submitStep || "Đang xử lý...";
+    }
+
+    if (!selectedPosition) {
+      return "Chọn vị thế";
+    }
+
+    if (removeLpAmount <= 0n) {
+      return "Chọn tỷ lệ rút";
+    }
+
+    if (isLoadingLpAllowance) {
+      return "Đang kiểm tra allowance...";
+    }
+
+    if (lpAllowance < removeLpAmount) {
+      return "Phê duyệt LP Token";
+    }
+
+    return "Rút Thanh Khoản";
+  }, [
+    isConnected,
+    isConnecting,
+    isLoadingLpAllowance,
+    isSubmitting,
+    lpAllowance,
+    removeLpAmount,
+    selectedPosition,
+    submitStep,
+  ]);
+
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
       <div className="w-full max-w-md mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
@@ -567,17 +986,177 @@ export default function PoolPage() {
         </div>
 
         {activeTab === "remove" ? (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-            Tính năng Rút Thanh Khoản sẽ hoàn thiện ở Task 4.4.
-          </div>
+          <>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-sm font-semibold text-slate-900">My Positions</h2>
+                {isLoadingPositions && (
+                  <Loader2Icon className="size-4 animate-spin text-slate-400" />
+                )}
+              </div>
+
+              {liquidityPositions.length === 0 ? (
+                <p className="text-xs text-slate-500">
+                  Chưa có LP position nào trong ví hiện tại.
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                  {liquidityPositions.map((position) => {
+                    const isSelected =
+                      selectedPosition?.pairAddress.toLowerCase() ===
+                      position.pairAddress.toLowerCase();
+
+                    return (
+                      <button
+                        key={position.pairAddress}
+                        onClick={() => setSelectedPairAddress(position.pairAddress)}
+                        className={[
+                          "w-full rounded-xl border px-3 py-2 text-left transition-colors duration-200",
+                          isSelected
+                            ? "border-sky-300 bg-sky-50"
+                            : "border-slate-200 bg-white hover:bg-slate-50",
+                        ].join(" ")}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-semibold text-slate-900">
+                            {position.token0.symbol} / {position.token1.symbol}
+                          </span>
+                          <span className="text-xs font-mono text-slate-600">
+                            LP: {formatAmountDisplay(position.userLpBalance, 18)}
+                          </span>
+                        </div>
+                        <div className="mt-1 text-xs text-slate-500">
+                          Your share: {formatRatio(position.sharePercent, 4)}%
+                        </div>
+                        <div className="mt-1 text-xs text-slate-500 font-mono">
+                          {position.token0.symbol}: {formatAmountDisplay(position.pooledToken0, position.token0.decimals)} | {" "}
+                          {position.token1.symbol}: {formatAmountDisplay(position.pooledToken1, position.token1.decimals)}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {selectedPosition && (
+              <div className="rounded-xl border border-slate-200 bg-white p-3 mt-4 space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-500">Cặp được chọn</span>
+                  <span className="font-semibold text-slate-900">
+                    {selectedPosition.token0.symbol} / {selectedPosition.token1.symbol}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-4 gap-2">
+                  {[25, 50, 75, 100].map((value) => (
+                    <button
+                      key={value}
+                      onClick={() => setRemovePercentInput(String(value))}
+                      className={[
+                        "rounded-lg border px-2 py-1.5 text-xs font-semibold transition-colors duration-200",
+                        removePercent === value
+                          ? "border-sky-300 bg-sky-50 text-sky-700"
+                          : "border-slate-200 text-slate-600 hover:bg-slate-50",
+                      ].join(" ")}
+                    >
+                      {value}%
+                    </button>
+                  ))}
+                </div>
+
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  value={removePercent}
+                  onChange={(event) => setRemovePercentInput(event.target.value)}
+                  className="w-full accent-sky-500"
+                />
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500">Tỷ lệ rút</span>
+                  <Input
+                    value={removePercentInput}
+                    onChange={(event) => {
+                      const next = event.target.value.trim();
+                      if (isPercentInput(next)) {
+                        setRemovePercentInput(next);
+                      }
+                    }}
+                    className="h-8 w-24 text-right font-mono"
+                  />
+                  <span className="text-xs text-slate-500">%</span>
+                </div>
+
+                <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 space-y-1 text-xs font-mono">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">LP sẽ đốt</span>
+                    <span className="text-slate-900">
+                      {formatAmountDisplay(removeLpAmount, 18)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Ước tính nhận {selectedPosition.token0.symbol}</span>
+                    <span className="text-slate-900">
+                      {formatAmountDisplay(
+                        previewToken0Amount,
+                        selectedPosition.token0.decimals,
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Ước tính nhận {selectedPosition.token1.symbol}</span>
+                    <span className="text-slate-900">
+                      {formatAmountDisplay(
+                        previewToken1Amount,
+                        selectedPosition.token1.decimals,
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {(walletError || uiError) && (
+              <div className="rounded-xl bg-red-500/10 border border-red-200 text-red-700 text-xs px-3 py-2 mt-3 wrap-break-word">
+                {walletError ?? uiError}
+              </div>
+            )}
+
+            <button
+              disabled={isSubmitting || isConnecting || isLoadingPositions}
+              onClick={() => {
+                if (!isConnected) {
+                  void connectWallet();
+                  return;
+                }
+
+                void handleRemoveLiquidity();
+              }}
+              className={[
+                "w-full mt-4 rounded-xl py-3 text-lg font-semibold",
+                "border border-red-200 bg-white text-red-600",
+                "transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:bg-red-50",
+                (isSubmitting || isConnecting || isLoadingPositions) &&
+                  "opacity-80 cursor-not-allowed",
+              ].join(" ")}
+            >
+              <span className="inline-flex items-center justify-center gap-2">
+                {(isSubmitting || isConnecting) && (
+                  <Loader2Icon className="size-4 animate-spin" />
+                )}
+                {removeActionLabel}
+              </span>
+            </button>
+          </>
         ) : (
           <>
             <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-slate-400 font-medium">Token A</span>
-                <span className="text-xs text-slate-500 font-mono">
-                  Số dư: {balanceTextA}
-                </span>
+                <span className="text-xs text-slate-500 font-mono">Số dư: {balanceTextA}</span>
               </div>
               <div className="flex items-center gap-3">
                 <TokenSelector
@@ -610,9 +1189,7 @@ export default function PoolPage() {
             <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-slate-400 font-medium">Token B</span>
-                <span className="text-xs text-slate-500 font-mono">
-                  Số dư: {balanceTextB}
-                </span>
+                <span className="text-xs text-slate-500 font-mono">Số dư: {balanceTextB}</span>
               </div>
               <div className="flex items-center gap-3">
                 <TokenSelector
@@ -687,7 +1264,7 @@ export default function PoolPage() {
                 {(isSubmitting || isConnecting) && (
                   <Loader2Icon className="size-4 animate-spin" />
                 )}
-                {mainActionLabel}
+                {addActionLabel}
               </span>
             </button>
           </>
