@@ -1,0 +1,7 @@
+{
+  "LizSwapDeployModule#LizSwapFactory": "0x8b419c98c94Bd26Fd10eaB41C2A97826faf80105",
+  "LizSwapDeployModule#WETH": "0x570e73b778f99aAec8469A8fcFDeD6Dc7a25e6b1",
+  "LizSwapDeployModule#mDAI": "0x6205c6E44117D4bb56d2A1274C2C17c09173593a",
+  "LizSwapDeployModule#mUSDT": "0x0656835a1972d7e9379aF7C5F36F9861411Cc497",
+  "LizSwapDeployModule#LizSwapRouter": "0xAaa9015dB17062ea4C5342bC47Db688574d70515"
+}
