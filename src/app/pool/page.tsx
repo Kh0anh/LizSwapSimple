@@ -180,6 +180,12 @@ export default function PoolPage() {
     [provider],
   );
 
+  // [UC-02] Luong approve/allowance phai uu tien provider cua vi nguoi dung.
+  const walletReadProvider = React.useMemo<Provider | null>(
+    () => signer?.provider ?? provider ?? null,
+    [provider, signer],
+  );
+
   const routerAddress = React.useMemo(
     () =>
       resolveConfiguredAddress(
@@ -511,7 +517,7 @@ export default function PoolPage() {
       return;
     }
 
-    if (!account || !routerAddress) {
+    if (!account || !routerAddress || !walletReadProvider) {
       setLpAllowance(0n);
       return;
     }
@@ -523,7 +529,7 @@ export default function PoolPage() {
 
       try {
         const allowance = await swapService.getAllowance(
-          readProvider,
+          walletReadProvider,
           selectedPosition.pairAddress,
           account,
           routerAddress,
@@ -548,7 +554,7 @@ export default function PoolPage() {
     return () => {
       cancelled = true;
     };
-  }, [account, readProvider, routerAddress, selectedPosition]);
+  }, [account, routerAddress, selectedPosition, walletReadProvider]);
 
   React.useEffect(() => {
     if (!hasExistingPool || !poolReserves || !tokenB) {
@@ -594,7 +600,7 @@ export default function PoolPage() {
       return;
     }
 
-    if (!tokenA || !tokenB || !signer || !account) {
+    if (!tokenA || !tokenB || !signer || !account || !walletReadProvider) {
       setUiError("Thiếu thông tin ví hoặc token.");
       return;
     }
@@ -633,7 +639,7 @@ export default function PoolPage() {
     try {
       setSubmitStep("Kiểm tra allowance token A...");
       const allowanceA = await swapService.getAllowance(
-        readProvider,
+        walletReadProvider,
         tokenA.address,
         account,
         routerAddress,
@@ -656,7 +662,7 @@ export default function PoolPage() {
 
       setSubmitStep("Kiểm tra allowance token B...");
       const allowanceB = await swapService.getAllowance(
-        readProvider,
+        walletReadProvider,
         tokenB.address,
         account,
         routerAddress,
@@ -748,7 +754,6 @@ export default function PoolPage() {
     amountBInput,
     connectWallet,
     isConnected,
-    readProvider,
     refreshBalances,
     refreshPool,
     refreshPositions,
@@ -756,6 +761,7 @@ export default function PoolPage() {
     signer,
     tokenA,
     tokenB,
+    walletReadProvider,
   ]);
 
   const handleRemoveLiquidity = React.useCallback(async () => {
@@ -764,7 +770,7 @@ export default function PoolPage() {
       return;
     }
 
-    if (!selectedPosition || !signer || !account) {
+    if (!selectedPosition || !signer || !account || !walletReadProvider) {
       setUiError("Vui lòng chọn vị thế thanh khoản.");
       return;
     }
@@ -791,7 +797,7 @@ export default function PoolPage() {
       setSubmitStep("Kiểm tra allowance LP token...");
 
       const allowance = await swapService.getAllowance(
-        readProvider,
+        walletReadProvider,
         selectedPosition.pairAddress,
         account,
         routerAddress,
@@ -878,7 +884,6 @@ export default function PoolPage() {
     isConnected,
     previewToken0Amount,
     previewToken1Amount,
-    readProvider,
     refreshBalances,
     refreshPool,
     refreshPositions,
@@ -886,6 +891,7 @@ export default function PoolPage() {
     routerAddress,
     selectedPosition,
     signer,
+    walletReadProvider,
   ]);
 
   const addActionLabel = React.useMemo(() => {
