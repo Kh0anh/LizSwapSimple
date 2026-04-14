@@ -276,13 +276,45 @@ async function getReserves(
   tokenB: string,
 ): Promise<PairReserves> {
   const read = getReadProvider(provider);
+  const normalizedFactoryAddress = requireAddress(factoryAddress, "factoryAddress");
   const normalizedTokenA = requireAddress(tokenA, "tokenA");
   const normalizedTokenB = requireAddress(tokenB, "tokenB");
 
-  const factory = createFactoryContract(read, factoryAddress);
-  const pairAddress = normalizeAddress(
-    (await factory.getPair(normalizedTokenA, normalizedTokenB)) as string,
-  );
+  // [FR-02.2] Factory co the chua deploy tren chain hien tai cua user.
+  // Tranh BAD_DATA khi goi getPair tren dia chi khong co bytecode.
+  const factoryCode = await read.getCode(normalizedFactoryAddress);
+  if (factoryCode === "0x") {
+    return {
+      pairAddress: ZeroAddress,
+      token0: ZeroAddress,
+      token1: ZeroAddress,
+      reserve0: 0n,
+      reserve1: 0n,
+      reserveA: 0n,
+      reserveB: 0n,
+      blockTimestampLast: 0n,
+    };
+  }
+
+  const factory = createFactoryContract(read, normalizedFactoryAddress);
+  let pairAddress = ZeroAddress;
+
+  try {
+    pairAddress = normalizeAddress(
+      (await factory.getPair(normalizedTokenA, normalizedTokenB)) as string,
+    );
+  } catch (error) {
+    const codeValue =
+      typeof error === "object" && error !== null && "code" in error
+        ? String((error as { code?: unknown }).code ?? "")
+        : "";
+
+    if (codeValue === "BAD_DATA") {
+      pairAddress = ZeroAddress;
+    } else {
+      throw error;
+    }
+  }
 
   if (pairAddress === ZeroAddress) {
     return {
