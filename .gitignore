@@ -9,6 +9,7 @@ node_modules/
 artifacts/
 cache/
 typechain-types/
+types/
 
 # ─── Next.js (Frontend) ───
 .next/

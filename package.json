@@ -8,8 +8,8 @@
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
     "node": "npx hardhat node",
-    "deploy:local": "npx hardhat ignition deploy ./ignition/modules/deploy.ts --network localhost",
-    "deploy:testnet": "npx hardhat ignition deploy ./ignition/modules/deploy.ts --network bscTestnet",
+    "deploy:local": "npx hardhat ignition deploy ./ignition/modules/deploy.ts --network localhost && npx hardhat run scripts/exportDeployed.ts",
+    "deploy:testnet": "npx hardhat ignition deploy ./ignition/modules/deploy.ts --network bscTestnet && npx hardhat run scripts/exportDeployed.ts",
     "dev": "next dev",
     "build": "next build"
   },
@@ -30,6 +30,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.27",
+    "dotenv": "^17.4.2",
     "hardhat": "^3.3.0",
     "postcss": "^8.5.9",
     "tailwindcss": "^4.2.2",

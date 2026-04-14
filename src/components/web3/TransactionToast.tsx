@@ -195,7 +195,7 @@ function ErrorToastContent({
       {description && (
         <p className="text-xs text-slate-500 pl-6">{description}</p>
       )}
-      <p className="text-xs text-red-400 pl-6 break-words">{displayError}</p>
+      <p className="text-xs text-red-400 pl-6 wrap-break-words">{displayError}</p>
     </div>
   );
 }

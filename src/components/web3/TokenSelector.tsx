@@ -18,12 +18,11 @@
  * - Dialog list: rounded-2xl [frontend-design.md §4]
  * - Balance: font-mono text-sm text-slate-500 [frontend-design.md §3]
  * - Token icon: placeholder fallback nếu logoUrl không load
- *
- * ⚠️ swapService stub: Task 3.5 (Huy) chưa merge — sử dụng stub inline
- * Khi Task 3.5 merge vào develop, thay stub bằng import thật.
+ * - Balance lấy trực tiếp từ swapService (Task 3.5)
  */
 
 import * as React from "react";
+import { formatUnits } from "ethers";
 import { ChevronDownIcon, SearchIcon, WalletIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -35,6 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { swapService } from "@/services/swapService";
 import type { TokenInfo } from "@/types/token";
 import tokenList from "@/services/contracts/tokenList.json";
 
@@ -56,27 +56,32 @@ interface TokenSelectorProps {
   walletAddress?: string;
 }
 
-// ─── Stub Balance Fetcher ────────────────────────────────────────────────────
+// ─── Balance Helpers ─────────────────────────────────────────────────────────
 
 /**
- * [FR-01.2] Stub cho swapService.getTokenBalance()
- *
- * ⚠️ STUB: Task 3.5 (swapService) chưa merge vào develop.
- * Trả về "—" khi chưa có swapService thật.
- * Sau khi Task 3.5 merge: thay bằng import { swapService } from "@/services/swapService"
- * và gọi swapService.getTokenBalance(tokenAddress, walletAddress)
- *
- * @param _tokenAddress - Địa chỉ contract token
- * @param _walletAddress - Địa chỉ ví người dùng
+ * [FR-01.2] Format balance số lớn theo chuẩn hiển thị UI.
+ */
+function formatBalance(balance: bigint, decimals: number): string {
+  const raw = formatUnits(balance, decimals);
+  const [whole, fraction = ""] = raw.split(".");
+  const groupedWhole = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const trimmedFraction = fraction.slice(0, 6).replace(/0+$/, "");
+
+  return trimmedFraction.length > 0
+    ? `${groupedWhole}.${trimmedFraction}`
+    : groupedWhole;
+}
+
+/**
+ * [FR-01.2] Lấy số dư token từ swapService và trả về chuỗi đã format.
  */
 async function getTokenBalance(
-  _tokenAddress: string,
-  _walletAddress: string
+  tokenAddress: string,
+  walletAddress: string,
+  decimals: number
 ): Promise<string> {
-  // TODO [Task 3.5]: Thay bằng swapService.getTokenBalance(tokenAddress, walletAddress)
-  // import { swapService } from "@/services/swapService";
-  // return swapService.getTokenBalance(_tokenAddress, _walletAddress);
-  return "—";
+  const balance = await swapService.getTokenBalance(tokenAddress, walletAddress);
+  return formatBalance(balance, decimals);
 }
 
 // ─── TokenIcon ───────────────────────────────────────────────────────────────
@@ -230,7 +235,11 @@ export function TokenSelector({
       const entries = await Promise.all(
         tokens.map(async (token) => {
           try {
-            const bal = await getTokenBalance(token.address, walletAddress);
+            const bal = await getTokenBalance(
+              token.address,
+              walletAddress,
+              token.decimals
+            );
             return [token.address, bal] as const;
           } catch {
             return [token.address, "—"] as const;
