@@ -1,22 +1,35 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-// ============================================================================
-// MockERC20.sol — Token giả lập cho testing
-// Cung cấp public mint() để deployer tạo token test trên Local/Testnet.
-// (Phiên bản tạm cho test Task 2.4 — Task 2.7 sẽ hoàn thiện đầy đủ)
-// ============================================================================
-
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+/**
+ * @title MockERC20
+ * @dev [project-structure.md §1] MockERC20 Token cho môi trường Local / Testnet.
+ * Contract này cung cấp public mint logic để cung cấp token giả lập (như MockUSDT, MockDAI)
+ * phục vụ test giao thức AMM Swap và Liquidity.
+ */
 contract MockERC20 is ERC20 {
+    /**
+     * @dev Constructor khởi tạo token với số lượng ban đầu.
+     * @param name Tên của token.
+     * @param symbol Ký hiệu của token.
+     * @param initialSupply Tổng cung ban đầu cấp cho deployer.
+     */
     constructor(
-        string memory name_,
-        string memory symbol_
-    ) ERC20(name_, symbol_) {}
+        string memory name,
+        string memory symbol,
+        uint256 initialSupply
+    ) ERC20(name, symbol) {
+        _mint(msg.sender, initialSupply);
+    }
 
-    /// @notice Public mint cho testing — ai cũng có thể mint
-    function mint(address to, uint256 amount) external {
+    /**
+     * @dev Public mint function cho deployer mint token tùy ý khi test.
+     * @param to Địa chỉ nhận token.
+     * @param amount Số lượng token cần mint.
+     */
+    function mint(address to, uint256 amount) public {
         _mint(to, amount);
     }
 }
