@@ -13,20 +13,11 @@ pragma solidity ^0.8.20;
 // Lưu ý kiến trúc:
 //   - Factory import ILizSwapFactory để đảm bảo implement đúng interface
 //   - Factory dùng CREATE opcode (new LizSwapPair()) thay vì CREATE2 cho đơn giản
-//   - Gọi initialize() qua interface nhỏ IInitializable để tránh circular import
-//     với LizSwapPair (Task 2.4 chưa tồn tại ở thời điểm này)
+//   - Import LizSwapPair.sol trực tiếp (Task 2.4 đã hoàn thành)
 // ============================================================================
 
 import "../interfaces/ILizSwapFactory.sol";
-
-/**
- * @dev Interface nội bộ nhỏ dùng để Factory gọi initialize() trên Pair mới deploy.
- *      Pattern này tránh circular dependency giữa Factory ↔ Pair (giống Uniswap V2).
- *      LizSwapPair (Task 2.4) phải implement hàm initialize() tương thích interface này.
- */
-interface ILizSwapPairInitializable {
-    function initialize(address token0, address token1) external;
-}
+import "./LizSwapPair.sol";
 
 /**
  * @title LizSwapFactory
@@ -176,9 +167,9 @@ contract LizSwapFactory is ILizSwapFactory {
         pair = address(newPair);
 
         // --- Bước 5: Gọi initialize() để set token addresses trong Pair ---
-        // Dùng interface nhỏ ILizSwapPairInitializable để tránh circular dependency.
+        // Gọi trực tiếp trên LizSwapPair contract (Task 2.4 đã implement đầy đủ).
         // LizSwapPair.initialize() chỉ được gọi một lần duy nhất ngay sau deploy.
-        ILizSwapPairInitializable(pair).initialize(token0, token1);
+        LizSwapPair(pair).initialize(token0, token1);
 
         // --- Bước 6: Lưu vào registry (cả hai chiều) ---
         // [C4-Component - Factory: "Tạo và theo dõi registry của tất cả các Pair"]
@@ -191,85 +182,5 @@ contract LizSwapFactory is ILizSwapFactory {
         // --- Bước 8: Emit event PairCreated ---
         // pairIndex = allPairs.length (chỉ số 1-based theo convention Uniswap V2)
         emit PairCreated(token0, token1, pair, _allPairs.length);
-    }
-}
-
-// ============================================================================
-// LizSwapPair — Placeholder import để Factory có thể dùng `new LizSwapPair()`
-//
-// LizSwapPair được implement đầy đủ trong Task 2.4.
-// File này sẽ được UPDATE khi Task 2.4 hoàn thành bằng cách:
-//   import "./LizSwapPair.sol";
-// và xoá bỏ stub dưới đây.
-//
-// Tại thời điểm Task 2.3, stub tối thiểu đảm bảo Factory compile được.
-// Stub này KHÔNG chứa logic AMM — chỉ là skeleton để test Factory hoạt động.
-// ============================================================================
-
-// Import LizSwapERC20 làm base cho Pair (kế thừa LP Token logic)
-import "./LizSwapERC20.sol";
-
-/**
- * @title LizSwapPair (Stub — Task 2.3)
- * @notice Skeleton tạm thời để LizSwapFactory có thể compile và deploy Pair.
- * @dev STUB: Chỉ chứa constructor và hàm initialize() tối thiểu.
- *      Task 2.4 sẽ implement đầy đủ logic AMM (mint, burn, swap, x*y=k).
- *
- *      Kế thừa LizSwapERC20 để sẵn sàng cho LP Token phát hành [FR-02.4].
- */
-contract LizSwapPair is LizSwapERC20 {
-    // -------------------------------------------------------------------------
-    // State Variables (Pair metadata — được set bởi Factory qua initialize())
-    // -------------------------------------------------------------------------
-
-    /// @notice Địa chỉ Factory đã deploy Pool này
-    address public factory;
-
-    /// @notice Địa chỉ token0 (sort nhỏ hơn trong cặp)
-    address public token0;
-
-    /// @notice Địa chỉ token1 (sort lớn hơn trong cặp)
-    address public token1;
-
-    // -------------------------------------------------------------------------
-    // Initialization Guard
-    // -------------------------------------------------------------------------
-
-    /// @dev Flag ngăn không cho gọi initialize() nhiều hơn một lần
-    bool private _initialized;
-
-    // -------------------------------------------------------------------------
-    // Constructor
-    // -------------------------------------------------------------------------
-
-    /**
-     * @notice Ghi nhận Factory là người deploy.
-     * @dev msg.sender lúc deploy chính là Factory contract.
-     *      Token addresses được set sau qua initialize() để Factory có thể
-     *      lấy địa chỉ Pair trước khi truyền token vào.
-     */
-    constructor() LizSwapERC20() {
-        factory = msg.sender;
-    }
-
-    // -------------------------------------------------------------------------
-    // Initialize — được gọi bởi Factory ngay sau deploy
-    // -------------------------------------------------------------------------
-
-    /**
-     * @notice Khởi tạo địa chỉ token0 và token1 cho Pool.
-     * @dev Chỉ được gọi duy nhất một lần, ngay sau khi Factory deploy Pair.
-     *      Factory đảm bảo token0 < token1 (đã sort trước khi gọi).
-     *      [C4-Component - Factory: "Deploy & tạo địa chỉ Pool mới (createPair)"]
-     *
-     * @param _token0 Địa chỉ token0 (sort nhỏ hơn)
-     * @param _token1 Địa chỉ token1 (sort lớn hơn)
-     */
-    function initialize(address _token0, address _token1) external {
-        require(!_initialized, "LizSwapPair: ALREADY_INITIALIZED");
-        require(msg.sender == factory, "LizSwapPair: FORBIDDEN");
-        token0 = _token0;
-        token1 = _token1;
-        _initialized = true;
     }
 }
