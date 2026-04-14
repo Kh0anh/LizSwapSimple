@@ -117,7 +117,7 @@ export default function HomePage() {
         <button
           disabled
           className="w-full mt-4 h-12 rounded-xl font-semibold text-white
-            bg-gradient-to-r from-sky-400 to-blue-500
+            bg-linear-to-r from-sky-400 to-blue-500
             opacity-40 cursor-not-allowed"
         >
           {tokenIn && tokenOut ? "Nhập số lượng" : "Chọn token"}
