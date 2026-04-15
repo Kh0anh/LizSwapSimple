@@ -62,9 +62,27 @@ npx hardhat run scripts/deploy.ts --network bscTestnet
 Chỉ định chạy 1 dòng command Compose dưới đây để giao engine tự động build bộ file tĩnh Next.js và chạy Frontend Container:
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
-Truy cập và sử dụng dịch vụ DEX thông qua trình duyệt tại: **[http://localhost:3000](http://localhost:3000)**
+Truy cập và sử dụng dịch vụ DEX thông qua trình duyệt tại: **[http://localhost](http://localhost)** (host port `80`, có thể đổi qua biến `HTTP_PORT` trong `.env`).
+
+### 🔐 Bước 4 (Tùy chọn): Bật HTTPS với SSL trên cổng 443
+
+Để bật SSL nhanh bằng Nginx, chuẩn bị thư mục chứng chỉ:
+
+```text
+ssl/
+├── fullchain.pem
+└── privkey.pem
+```
+
+Sau đó chạy compose với file override SSL:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.ssl.yml up -d --build
+```
+
+Khi đó ứng dụng sẽ chạy qua HTTPS tại: **[https://localhost](https://localhost)** (host port `443`, có thể đổi qua biến `HTTPS_PORT`).
 
 ---
 
