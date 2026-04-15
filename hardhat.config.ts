@@ -1,11 +1,14 @@
 // ============================================================================
 // [NFR-03] Cấu hình Hardhat Environment — Task 1.2
 // Solidity 0.8.20+ với optimizer, networks localhost/bscTestnet/bscMainnet
-// Mọi giá trị nhạy cảm đọc từ configVariable — tuyệt đối không hardcode
+// Mọi giá trị nhạy cảm đọc từ biến môi trường (process.env) qua file .env
 // ============================================================================
-import { configVariable, defineConfig } from "hardhat/config";
+import { defineConfig } from "hardhat/config";
 import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+import * as dotenv from "dotenv";
 
+// Nạp các biến môi trường từ .env
+dotenv.config();
 
 export default defineConfig({
   // Plugins — Hardhat v3 yêu cầu khai báo rõ ràng trong mảng plugins
@@ -36,8 +39,7 @@ export default defineConfig({
 
   // ---------------------------------------------------------------------------
   // [NFR-03] — Định nghĩa Networks: hardhat (default), localhost, BSC Testnet,
-  // BSC Mainnet. RPC URL và Private Key đọc từ Hardhat Configuration Variables.
-  // Sử dụng: npx hardhat config-variable set <TÊN_BIẾN> <GIÁ_TRỊ>
+  // BSC Mainnet. RPC URL và Private Key đọc từ file .env.
   // ---------------------------------------------------------------------------
   networks: {
     // Network mặc định — Hardhat in-process simulation
@@ -55,17 +57,17 @@ export default defineConfig({
     // BSC Testnet (chainId: 97) — dùng cho giai đoạn test
     bscTestnet: {
       type: "http",
-      url: configVariable("BSC_TESTNET_RPC_URL"),
+      url: process.env.BSC_TESTNET_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545",
       chainId: 97,
-      accounts: [configVariable("DEPLOYER_PRIVATE_KEY")],
+      accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
     },
 
     // BSC Mainnet (chainId: 56) — dùng cho giai đoạn production
     bscMainnet: {
       type: "http",
-      url: configVariable("BSC_MAINNET_RPC_URL"),
+      url: process.env.BSC_MAINNET_RPC_URL || "https://bsc-dataseed.binance.org/",
       chainId: 56,
-      accounts: [configVariable("DEPLOYER_PRIVATE_KEY")],
+      accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
     },
   },
 });
