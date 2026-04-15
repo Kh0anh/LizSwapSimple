@@ -619,19 +619,25 @@ export default function HomePage() {
 
         {/* ── Input Token Section (Từ) [FR-01.2] ── */}
         <div className="rounded-xl bg-slate-50 border border-slate-100 p-4 mb-1 hover:border-slate-200 transition-colors duration-200">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-slate-400 font-medium">Từ</span>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs text-slate-600 font-semibold uppercase tracking-wider">Từ</span>
             {/* [FR-01.3] Balance display — gọi swapService.getTokenBalance() */}
-            {account && tokenIn && (
-              <button
-                className="text-xs text-slate-500 font-mono hover:text-sky-500 transition-colors duration-200"
-                onClick={() => {
-                  if (balanceIn > 0n) setAmountIn(formatUnits(balanceIn, tokenIn.decimals));
-                }}
-                title="Điền tối đa"
-              >
-                Số dư: {formatBalance(balanceIn, tokenIn.decimals)} {tokenIn.symbol}
-              </button>
+            {account ? (
+              tokenIn ? (
+                <button
+                  className="text-xs text-slate-600 font-mono font-semibold hover:text-sky-600 transition-colors duration-200 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded"
+                  onClick={() => {
+                    if (balanceIn > 0n) setAmountIn(formatUnits(balanceIn, tokenIn.decimals));
+                  }}
+                  title="Click để điền toàn bộ số dư"
+                >
+                  Số dư: {formatBalance(balanceIn, tokenIn.decimals)} {tokenIn.symbol}
+                </button>
+              ) : (
+                <span className="text-xs text-slate-400 font-mono">Chọn token để xem số dư</span>
+              )
+            ) : (
+              <span className="text-xs text-slate-400 font-mono">Kết nối ví để xem số dư</span>
             )}
           </div>
           <div className="flex items-center gap-3">
@@ -676,12 +682,19 @@ export default function HomePage() {
 
         {/* ── Output Token Section (Đến) [FR-01.2] ── */}
         <div className="rounded-xl bg-slate-50 border border-slate-100 p-4 mt-1 hover:border-slate-200 transition-colors duration-200">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-slate-400 font-medium">Đến</span>
-            {account && tokenOut && (
-              <span className="text-xs text-slate-500 font-mono">
-                Số dư: {formatBalance(balanceOut, tokenOut.decimals)} {tokenOut.symbol}
-              </span>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs text-slate-600 font-semibold uppercase tracking-wider">Đến</span>
+            {/* [FR-01.3] Balance display — hiển thị số dư token đích */}
+            {account ? (
+              tokenOut ? (
+                <span className="text-xs text-slate-600 font-mono font-semibold bg-slate-100 px-2 py-1 rounded">
+                  Số dư: {formatBalance(balanceOut, tokenOut.decimals)} {tokenOut.symbol}
+                </span>
+              ) : (
+                <span className="text-xs text-slate-400 font-mono">Chọn token để xem số dư</span>
+              )
+            ) : (
+              <span className="text-xs text-slate-400 font-mono">Kết nối ví để xem số dư</span>
             )}
           </div>
           <div className="flex items-center gap-3">
