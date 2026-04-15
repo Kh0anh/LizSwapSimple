@@ -41,6 +41,9 @@
     "node_modules",
     "artifacts",
     "cache",
-    "typechain-types"
+    "typechain-types",
+    "scripts",
+    "ignition",
+    "test"
   ]
 }
