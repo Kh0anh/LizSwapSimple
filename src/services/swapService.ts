@@ -38,6 +38,8 @@ export type PairReserves = {
 
 const DEFAULT_RPC_URL = process.env.NEXT_PUBLIC_RPC_URL ?? "http://127.0.0.1:8545";
 const addressMap = deployedAddresses as DeployedAddressMap;
+const ALLOW_DEPLOYED_FALLBACK =
+  process.env.NEXT_PUBLIC_ALLOW_DEPLOYED_FALLBACK === "true";
 
 let readProvider: JsonRpcProvider | null = null;
 
@@ -83,12 +85,12 @@ function resolveRouterAddress(override?: string): string {
   }
 
   const fromFile = normalizeAddress(addressMap.router);
-  if (fromFile !== ZeroAddress) {
+  if (ALLOW_DEPLOYED_FALLBACK && fromFile !== ZeroAddress) {
     return fromFile;
   }
 
   throw new Error(
-    "Router address is not configured. Set NEXT_PUBLIC_ROUTER_ADDRESS or src/services/contracts/deployedAddresses.json.",
+    "Router address is not configured. Set NEXT_PUBLIC_ROUTER_ADDRESS.",
   );
 }
 
@@ -104,12 +106,12 @@ function resolveFactoryAddress(override?: string): string {
   }
 
   const fromFile = normalizeAddress(addressMap.factory);
-  if (fromFile !== ZeroAddress) {
+  if (ALLOW_DEPLOYED_FALLBACK && fromFile !== ZeroAddress) {
     return fromFile;
   }
 
   throw new Error(
-    "Factory address is not configured. Set NEXT_PUBLIC_FACTORY_ADDRESS or src/services/contracts/deployedAddresses.json.",
+    "Factory address is not configured. Set NEXT_PUBLIC_FACTORY_ADDRESS.",
   );
 }
 
@@ -160,12 +162,36 @@ async function getAllowance(
   ownerAddress: string,
   spenderAddress: string,
 ): Promise<bigint> {
-  const token = createErc20Contract(tokenAddress, getReadProvider(provider));
-  const allowance = await token.allowance(
-    requireAddress(ownerAddress, "ownerAddress"),
-    requireAddress(spenderAddress, "spenderAddress"),
-  );
-  return allowance as bigint;
+  const readProvider = getReadProvider(provider);
+  const normalizedTokenAddress = requireAddress(tokenAddress, "tokenAddress");
+
+  // [UC-02] Một số token address có thể chưa được deploy trên network hiện tại.
+  // Trường hợp này RPC trả BAD_DATA khi gọi allowance, nên fallback về 0.
+  const code = await readProvider.getCode(normalizedTokenAddress);
+  if (code === "0x") {
+    return 0n;
+  }
+
+  const token = createErc20Contract(normalizedTokenAddress, readProvider);
+
+  try {
+    const allowance = await token.allowance(
+      requireAddress(ownerAddress, "ownerAddress"),
+      requireAddress(spenderAddress, "spenderAddress"),
+    );
+    return allowance as bigint;
+  } catch (error) {
+    const codeValue =
+      typeof error === "object" && error !== null && "code" in error
+        ? String((error as { code?: unknown }).code ?? "")
+        : "";
+
+    if (codeValue === "BAD_DATA") {
+      return 0n;
+    }
+
+    throw error;
+  }
 }
 
 async function getAmountsOut(
@@ -252,13 +278,45 @@ async function getReserves(
   tokenB: string,
 ): Promise<PairReserves> {
   const read = getReadProvider(provider);
+  const normalizedFactoryAddress = requireAddress(factoryAddress, "factoryAddress");
   const normalizedTokenA = requireAddress(tokenA, "tokenA");
   const normalizedTokenB = requireAddress(tokenB, "tokenB");
 
-  const factory = createFactoryContract(read, factoryAddress);
-  const pairAddress = normalizeAddress(
-    (await factory.getPair(normalizedTokenA, normalizedTokenB)) as string,
-  );
+  // [FR-02.2] Factory co the chua deploy tren chain hien tai cua user.
+  // Tranh BAD_DATA khi goi getPair tren dia chi khong co bytecode.
+  const factoryCode = await read.getCode(normalizedFactoryAddress);
+  if (factoryCode === "0x") {
+    return {
+      pairAddress: ZeroAddress,
+      token0: ZeroAddress,
+      token1: ZeroAddress,
+      reserve0: 0n,
+      reserve1: 0n,
+      reserveA: 0n,
+      reserveB: 0n,
+      blockTimestampLast: 0n,
+    };
+  }
+
+  const factory = createFactoryContract(read, normalizedFactoryAddress);
+  let pairAddress = ZeroAddress;
+
+  try {
+    pairAddress = normalizeAddress(
+      (await factory.getPair(normalizedTokenA, normalizedTokenB)) as string,
+    );
+  } catch (error) {
+    const codeValue =
+      typeof error === "object" && error !== null && "code" in error
+        ? String((error as { code?: unknown }).code ?? "")
+        : "";
+
+    if (codeValue === "BAD_DATA") {
+      pairAddress = ZeroAddress;
+    } else {
+      throw error;
+    }
+  }
 
   if (pairAddress === ZeroAddress) {
     return {
@@ -339,9 +397,29 @@ async function getTokenBalance(
     return provider.getBalance(normalizedAccount);
   }
 
+  // Return zero when address has no contract code on the current network
+  // to avoid BAD_DATA from calling ERC20 methods on non-contract addresses.
+  const code = await provider.getCode(normalizedTokenAddress);
+  if (code === "0x") {
+    return 0n;
+  }
+
   const token = createErc20Contract(normalizedTokenAddress, provider);
-  const balance = await token.balanceOf(normalizedAccount);
-  return balance as bigint;
+  try {
+    const balance = await token.balanceOf(normalizedAccount);
+    return balance as bigint;
+  } catch (error) {
+    const codeValue =
+      typeof error === "object" && error !== null && "code" in error
+        ? String((error as { code?: unknown }).code ?? "")
+        : "";
+
+    if (codeValue === "BAD_DATA") {
+      return 0n;
+    }
+
+    throw error;
+  }
 }
 
 export const swapService = {

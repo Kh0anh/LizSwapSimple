@@ -1,5 +1,17 @@
 "use client";
 
+/**
+ * Pool Page — LizSwapSimple DEX
+ * Task 4.3 + Task 4.4 + Task 4.6
+ *
+ * Yêu cầu liên quan:
+ * - [UC-04] Thêm Thanh khoản — Add Liquidity
+ * - [UC-05] Rút Thanh khoản — Remove Liquidity
+ * - [FR-02] Cung Cấp Thanh Khoản
+ * - [FR-03] Rút Thanh Khoản
+ * - [FR-02.4] ConfirmLiquidityDialog hiển thị tóm tắt trước khi gửi TX (Task 4.6)
+ */
+
 import * as React from "react";
 import {
   Contract,
@@ -19,6 +31,8 @@ import {
   showTxToast,
 } from "@/components/web3/TransactionToast";
 import { TokenSelector } from "@/components/web3/TokenSelector";
+// [Task 4.6] Import ConfirmLiquidityDialog [FR-02.4]
+import { ConfirmLiquidityDialog } from "@/components/web3/ConfirmLiquidityDialog";
 import { useWeb3 } from "@/hooks/useWeb3";
 import PairABI from "@/services/contracts/PairABI.json";
 import deployedAddresses from "@/services/contracts/deployedAddresses.json";
@@ -47,6 +61,8 @@ type LiquidityPosition = {
 const TOKENS = tokenList as TokenInfo[];
 const DEPLOYED = deployedAddresses as DeployAddressMap;
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL ?? "http://127.0.0.1:8545";
+const ALLOW_DEPLOYED_FALLBACK =
+  process.env.NEXT_PUBLIC_ALLOW_DEPLOYED_FALLBACK === "true";
 const SLIPPAGE_BPS = 100n;
 const DEADLINE_SECONDS = 20 * 60;
 
@@ -63,7 +79,12 @@ function resolveConfiguredAddress(
     return envValue;
   }
 
-  if (fileValue && isAddress(fileValue) && fileValue !== ZeroAddress) {
+  if (
+    ALLOW_DEPLOYED_FALLBACK &&
+    fileValue &&
+    isAddress(fileValue) &&
+    fileValue !== ZeroAddress
+  ) {
     return fileValue;
   }
 
@@ -175,9 +196,18 @@ export default function PoolPage() {
   const [submitStep, setSubmitStep] = React.useState("");
   const [uiError, setUiError] = React.useState<string | null>(null);
 
+  // [Task 4.6] State mở/đóng ConfirmLiquidityDialog [FR-02.4]
+  const [showConfirmLiquidityDialog, setShowConfirmLiquidityDialog] = React.useState(false);
+
   const readProvider = React.useMemo<Provider>(
     () => provider ?? new JsonRpcProvider(RPC_URL),
     [provider],
+  );
+
+  // [UC-02] Luong approve/allowance phai uu tien provider cua vi nguoi dung.
+  const walletReadProvider = React.useMemo<Provider | null>(
+    () => signer?.provider ?? provider ?? null,
+    [provider, signer],
   );
 
   const routerAddress = React.useMemo(
@@ -359,13 +389,18 @@ export default function PoolPage() {
       return;
     }
 
-    const [nextBalanceA, nextBalanceB] = await Promise.all([
-      swapService.getTokenBalance(readProvider, tokenA.address, account),
-      swapService.getTokenBalance(readProvider, tokenB.address, account),
-    ]);
+    try {
+      const [nextBalanceA, nextBalanceB] = await Promise.all([
+        swapService.getTokenBalance(readProvider, tokenA.address, account),
+        swapService.getTokenBalance(readProvider, tokenB.address, account),
+      ]);
 
-    setBalanceA(nextBalanceA);
-    setBalanceB(nextBalanceB);
+      setBalanceA(nextBalanceA);
+      setBalanceB(nextBalanceB);
+    } catch {
+      setBalanceA(0n);
+      setBalanceB(0n);
+    }
   }, [account, readProvider, tokenA, tokenB]);
 
   const refreshPool = React.useCallback(async () => {
@@ -485,6 +520,20 @@ export default function PoolPage() {
   }, [account, factoryAddress, readProvider]);
 
   React.useEffect(() => {
+    if (!routerAddress) {
+      setUiError("Chưa cấu hình NEXT_PUBLIC_ROUTER_ADDRESS.");
+      return;
+    }
+
+    if (!factoryAddress) {
+      setUiError("Chưa cấu hình NEXT_PUBLIC_FACTORY_ADDRESS.");
+      return;
+    }
+
+    setUiError(null);
+  }, [factoryAddress, routerAddress]);
+
+  React.useEffect(() => {
     void refreshPool();
   }, [refreshPool]);
 
@@ -506,7 +555,7 @@ export default function PoolPage() {
       return;
     }
 
-    if (!account || !routerAddress) {
+    if (!account || !routerAddress || !walletReadProvider) {
       setLpAllowance(0n);
       return;
     }
@@ -518,7 +567,7 @@ export default function PoolPage() {
 
       try {
         const allowance = await swapService.getAllowance(
-          readProvider,
+          walletReadProvider,
           selectedPosition.pairAddress,
           account,
           routerAddress,
@@ -543,7 +592,7 @@ export default function PoolPage() {
     return () => {
       cancelled = true;
     };
-  }, [account, readProvider, routerAddress, selectedPosition]);
+  }, [account, routerAddress, selectedPosition, walletReadProvider]);
 
   React.useEffect(() => {
     if (!hasExistingPool || !poolReserves || !tokenB) {
@@ -589,7 +638,7 @@ export default function PoolPage() {
       return;
     }
 
-    if (!tokenA || !tokenB || !signer || !account) {
+    if (!tokenA || !tokenB || !signer || !account || !walletReadProvider) {
       setUiError("Thiếu thông tin ví hoặc token.");
       return;
     }
@@ -628,7 +677,7 @@ export default function PoolPage() {
     try {
       setSubmitStep("Kiểm tra allowance token A...");
       const allowanceA = await swapService.getAllowance(
-        readProvider,
+        walletReadProvider,
         tokenA.address,
         account,
         routerAddress,
@@ -651,7 +700,7 @@ export default function PoolPage() {
 
       setSubmitStep("Kiểm tra allowance token B...");
       const allowanceB = await swapService.getAllowance(
-        readProvider,
+        walletReadProvider,
         tokenB.address,
         account,
         routerAddress,
@@ -743,7 +792,6 @@ export default function PoolPage() {
     amountBInput,
     connectWallet,
     isConnected,
-    readProvider,
     refreshBalances,
     refreshPool,
     refreshPositions,
@@ -751,6 +799,7 @@ export default function PoolPage() {
     signer,
     tokenA,
     tokenB,
+    walletReadProvider,
   ]);
 
   const handleRemoveLiquidity = React.useCallback(async () => {
@@ -759,7 +808,7 @@ export default function PoolPage() {
       return;
     }
 
-    if (!selectedPosition || !signer || !account) {
+    if (!selectedPosition || !signer || !account || !walletReadProvider) {
       setUiError("Vui lòng chọn vị thế thanh khoản.");
       return;
     }
@@ -786,7 +835,7 @@ export default function PoolPage() {
       setSubmitStep("Kiểm tra allowance LP token...");
 
       const allowance = await swapService.getAllowance(
-        readProvider,
+        walletReadProvider,
         selectedPosition.pairAddress,
         account,
         routerAddress,
@@ -873,7 +922,6 @@ export default function PoolPage() {
     isConnected,
     previewToken0Amount,
     previewToken1Amount,
-    readProvider,
     refreshBalances,
     refreshPool,
     refreshPositions,
@@ -881,6 +929,7 @@ export default function PoolPage() {
     routerAddress,
     selectedPosition,
     signer,
+    walletReadProvider,
   ]);
 
   const addActionLabel = React.useMemo(() => {
@@ -1243,6 +1292,10 @@ export default function PoolPage() {
               </div>
             )}
 
+            {/*
+             * [Task 4.6] Nút "Thêm Thanh Khoản" giờ mở ConfirmLiquidityDialog
+             * thay vì gọi handleAddLiquidity() trực tiếp [FR-02.4]
+             */}
             <button
               disabled={isSubmitting || isConnecting}
               onClick={() => {
@@ -1250,12 +1303,16 @@ export default function PoolPage() {
                   void connectWallet();
                   return;
                 }
-
-                void handleAddLiquidity();
+                // [Task 4.6] Mở ConfirmLiquidityDialog khi đã đủ thông tin
+                if (tokenA && tokenB && parsedAmountA && parsedAmountB) {
+                  setShowConfirmLiquidityDialog(true);
+                } else {
+                  void handleAddLiquidity();
+                }
               }}
               className={[
                 "w-full mt-4 rounded-xl py-3 text-lg font-semibold text-white",
-                "bg-linear-to-r from-sky-400 to-blue-500",
+                "bg-gradient-to-r from-sky-400 to-blue-500",
                 "transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-blue-500/25",
                 (isSubmitting || isConnecting) && "opacity-80 cursor-not-allowed",
               ].join(" ")}
@@ -1270,6 +1327,41 @@ export default function PoolPage() {
           </>
         )}
       </div>
+
+      {/* ── [Task 4.6] ConfirmLiquidityDialog [FR-02.4] [UC-04] ── */}
+      {/*
+       * Modal xác nhận trước khi gửi TX Add Liquidity
+       * Hiển thị: tokenA/B + amountA/B, LP token estimate, Share of Pool, Exchange Rate
+       * onConfirm → handleAddLiquidity() gửi TX on-chain
+       * [frontend-design.md §4] Fade/Zoom animation từ shadcn Dialog
+       */}
+      {tokenA && tokenB && (
+        <ConfirmLiquidityDialog
+          open={showConfirmLiquidityDialog}
+          onOpenChange={(open) => {
+            if (!isSubmitting) setShowConfirmLiquidityDialog(open);
+          }}
+          tokenA={tokenA}
+          tokenB={tokenB}
+          amountA={amountAInput}
+          amountB={amountBInput}
+          shareText={shareText}
+          lpEstimate={
+            lpReceivedEstimate !== null
+              ? formatAmountDisplay(lpReceivedEstimate, 18)
+              : null
+          }
+          exchangeRate={exchangeRateText}
+          isLoading={isSubmitting}
+          loadingStep={submitStep}
+          onConfirm={() => {
+            void handleAddLiquidity().then(() => {
+              // Đóng dialog sau khi xử lý xong (thành công hoặc lỗi)
+              setShowConfirmLiquidityDialog(false);
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

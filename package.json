@@ -10,6 +10,7 @@
     "node": "npx hardhat node",
     "deploy:local": "npx hardhat ignition deploy ./ignition/modules/deploy.ts --network localhost && npx hardhat run scripts/exportDeployed.ts",
     "deploy:testnet": "npx hardhat ignition deploy ./ignition/modules/deploy.ts --network bscTestnet && npx hardhat run scripts/exportDeployed.ts",
+    "mint:testnet": "npx hardhat run scripts/mintTestnetTokens.ts --network bscTestnet",
     "dev": "next dev",
     "build": "next build"
   },
