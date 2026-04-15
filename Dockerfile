@@ -46,8 +46,9 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy thư mục output tĩnh từ Stage builder sang nginx public root
 COPY --from=builder /app/out /usr/share/nginx/html
 
-# Expose port 80 (docker-compose sẽ map sang port 3000 của host)
+# Expose port 80 (HTTP) và 443 (HTTPS khi dùng nginx.ssl.conf)
 EXPOSE 80
+EXPOSE 443
 
 # Command mặc định khởi động nginx ở foreground mode
 CMD ["nginx", "-g", "daemon off;"]
